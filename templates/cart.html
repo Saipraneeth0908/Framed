@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <h2>Your Cart</h2>
+      <div class="muted">Bundle discount applies automatically for 3+ items.</div>
+    </div>
+
+    {% if cart_items|length == 0 %}
+      <div class="panel">
+        <div class="muted">Your cart is empty.</div>
+        <a class="btn btn--primary" href="/shop">Shop now</a>
+      </div>
+    {% else %}
+      <div class="cartGrid">
+        <div class="panel">
+          {% for item in cart_items %}
+            <div class="cartItem">
+              <div class="cartThumb" style="background-image:url('{{ item.product.thumb }}')"></div>
+              <div class="cartInfo">
+                <div class="cartTitle">{{ item.product.name }}</div>
+                <div class="muted small">
+                  Frame: {{ item.config.frame }} • Size: {{ item.config.size }} • Theme: {{ item.config.poster_theme }}
+                </div>
+                <div class="muted small">Unit: ${{ item.unit_price }}</div>
+              </div>
+
+              <form method="POST" action="/cart/update" class="cartActions">
+                <input type="hidden" name="idx" value="{{ loop.index0 }}"/>
+                <input class="qty" name="qty" type="number" min="0" value="{{ item.qty }}"/>
+                <button class="btn btn--ghost" type="submit">Update</button>
+              </form>
+            </div>
+          {% endfor %}
+
+          <form method="POST" action="/cart/clear" class="row">
+            <button class="btn btn--ghost" type="submit">Clear cart</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="sumRow"><span class="muted">Subtotal</span><span>${{ totals.subtotal }}</span></div>
+          <div class="sumRow"><span class="muted">Bundle discount</span><span>-${{ totals.bundle_discount }}</span></div>
+          <div class="sumRow total"><span>Total</span><span>${{ totals.total }}</span></div>
+          <div class="muted small">Items: {{ totals.total_qty }} (3+ unlocks discount)</div>
+
+          <div class="row">
+            <a class="btn btn--primary" href="/checkout">Checkout</a>
+            <a class="btn btn--ghost" href="/shop">Continue shopping</a>
+          </div>
+
+          <div class="panel subtle">
+            <div class="panel__head">
+              <div class="panel__title">Build a Set (E)</div>
+            </div>
+            <div class="muted small">
+              Add at least 3 posters to automatically apply a bundle discount.
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/cart.js"></script>
+{% endblock %}

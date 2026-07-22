@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <h2>Contact</h2>
+      <div class="muted">Questions, custom requests, bulk orders.</div>
+    </div>
+
+    {% if success %}
+      <div class="panel">
+        <h3>Message sent</h3>
+        <div class="muted">Thanks! (Demo mode: no email is sent yet.)</div>
+        <a class="btn btn--primary" href="/shop">Back to Shop</a>
+      </div>
+    {% else %}
+      <form class="panel" method="POST">
+        <div class="field">
+          <label>Name</label>
+          <input class="input" name="name" placeholder="Your name"/>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input class="input" name="email" placeholder="you@example.com"/>
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea class="input" name="message" rows="5" placeholder="Tell us what you need..."></textarea>
+        </div>
+        <button class="btn btn--primary" type="submit">Send</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

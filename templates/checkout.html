@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <h2>Checkout</h2>
+      <div class="muted">Stripe integration is planned later. This is a placeholder checkout flow.</div>
+    </div>
+
+    {% if success %}
+      <div class="panel">
+        <h3>Order submitted</h3>
+        <div class="muted">Thanks! Your order has been placed (no payment captured in this demo).</div>
+        <a class="btn btn--primary" href="/shop">Back to Shop</a>
+      </div>
+    {% else %}
+      {% if error %}
+        <div class="panel error">{{ error }}</div>
+      {% endif %}
+
+      <div class="checkoutGrid">
+        <form class="panel" method="POST">
+          <div class="field">
+            <label>Name*</label>
+            <input class="input" name="name" placeholder="Full name"/>
+          </div>
+          <div class="field">
+            <label>Email*</label>
+            <input class="input" name="email" placeholder="you@example.com"/>
+          </div>
+          <div class="field">
+            <label>Shipping Address*</label>
+            <textarea class="input" name="address" rows="4" placeholder="Street, City, State, ZIP"></textarea>
+          </div>
+
+          <button class="btn btn--primary" type="submit">Place order</button>
+          <div class="muted small">Payment via Stripe will be added later.</div>
+        </form>
+
+        <div class="panel">
+          <div class="panel__head">
+            <div class="panel__title">Summary</div>
+          </div>
+          <div class="muted small">
+            Add items in cart, then checkout. Bundle discount applies in cart.
+          </div>
+          <a class="btn btn--ghost" href="/cart">View cart</a>
+
+          <div class="panel subtle">
+            <div class="panel__title">Stripe Later</div>
+            <div class="muted small">
+              Next step: create a Stripe PaymentIntent and redirect to Stripe checkout.
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

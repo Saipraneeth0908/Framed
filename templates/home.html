@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="container hero__grid">
+    <div class="hero__copy">
+      <div class="chip">Theme 1 • Motorsport Gallery</div>
+      <h1>Collectible framed car posters, built like race telemetry.</h1>
+      <p class="muted">
+        Choose a car, customize the frame and poster theme, preview it on your wall, and build a set for bundle discounts.
+      </p>
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="/shop">Shop Posters</a>
+        <a class="btn btn--ghost" href="/about">How it works</a>
+      </div>
+      <div class="hero__mini">
+        <div class="mini-card">
+          <div class="mini-card__title">Configurator</div>
+          <div class="muted">Frame + size + theme</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card__title">Wall Preview</div>
+          <div class="muted">Upload room photo</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card__title">Build a Set</div>
+          <div class="muted">3+ posters = discount</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__panel">
+      <div class="hero__poster">
+        <div class="poster-sample">
+          <div class="poster-sample__stripe"></div>
+          <div class="poster-sample__text">GALLERY</div>
+          <div class="poster-sample__stats">
+            <div>POWER</div><div>—</div>
+            <div>TORQUE</div><div>—</div>
+            <div>0–100</div><div>—</div>
+          </div>
+        </div>
+      </div>
+      <div class="muted small">Tip: Add your generated poster images into <code>static/img/posters/</code></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <h2>Featured</h2>
+      <a class="link" href="/shop">View all</a>
+    </div>
+
+    <div class="grid">
+      {% for p in featured %}
+        <a class="card" href="/product/{{ p.slug }}">
+          <div class="card__img" style="background-image:url('{{ p.images.poster }}')">
+            <div class="card__overlay"></div>
+            <div class="card__tag">{{ p.brand }}</div>
+          </div>
+          <div class="card__body">
+            <div class="card__title">{{ p.name }}</div>
+            <div class="muted small">{{ p.short_desc }}</div>
+            <div class="card__meta">
+              <span class="pill">{{ p.color }}</span>
+              <span class="price">from ${{ p.base_price }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

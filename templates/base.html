@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title if title else "Motorsport Gallery Store" }}</title>
+  <link rel="stylesheet" href="/static/css/styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar__inner">
+      <a class="brand" href="/">MOTORSPORT<span>GALLERY</span></a>
+
+      <nav class="nav">
+        <a href="/shop">Shop</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+      </nav>
+
+      <div class="topbar__actions">
+        <button class="iconbtn" id="wishlistBtn" title="Wishlist">
+          ❤ <span class="badge" id="wishlistCount">0</span>
+        </button>
+        <button class="iconbtn" id="cartDrawerBtn" title="Cart">
+          🛒 <span class="badge" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cart Drawer -->
+  <aside class="drawer" id="cartDrawer" aria-hidden="true">
+    <div class="drawer__header">
+      <div class="drawer__title">Your Cart</div>
+      <button class="iconbtn" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="drawer__body" id="drawerBody">
+      <div class="muted">Open the cart page to edit items.</div>
+      <a class="btn btn--primary" href="/cart">Go to Cart</a>
+    </div>
+  </aside>
+  <div class="backdrop" id="drawerBackdrop"></div>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>
+        <div class="footer__brand">Motorsport Gallery</div>
+        <div class="muted">Framed car posters with a race-telemetry aesthetic.</div>
+      </div>
+      <div class="footer__links">
+        <a href="/shop">Shop</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/checkout">Checkout</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="container product">
+    <div class="product__left">
+      <!-- Main poster preview -->
+      <div class="posterFrame" id="posterFrame">
+        <img id="posterImg" src="{{ product.images.poster }}" alt="Poster preview" onerror="this.style.display='none'"/>
+        <div class="posterFallback" id="posterFallback">
+          <div class="fallbackTitle">{{ product.brand }}</div>
+          <div class="fallbackName">{{ product.name }}</div>
+          <div class="muted small">Add images in static/img/posters to display.</div>
+        </div>
+      </div>
+
+      <!-- 360 view -->
+      <div class="panel">
+        <div class="panel__head">
+          <div class="panel__title">360° view (drag)</div>
+          <div class="muted small">Uses frames list if available, otherwise uses poster</div>
+        </div>
+        <div class="viewer360" id="viewer360"
+             data-frames='{{ product.images.frames360 | tojson }}'
+             data-fallback='{{ product.images.poster }}'>
+          <img id="viewerImg" src="{{ product.images.poster }}" alt="360 view"/>
+          <div class="viewerHint">Drag left/right</div>
+        </div>
+      </div>
+
+      <!-- Reviews + customer photos -->
+      <div class="panel">
+        <div class="panel__head">
+          <div class="panel__title">Reviews</div>
+          <div class="muted small">{{ product.reviews|length }} reviews</div>
+        </div>
+        <div class="reviews">
+          {% if product.reviews|length == 0 %}
+            <div class="muted">No reviews yet. Be the first.</div>
+          {% else %}
+            {% for r in product.reviews %}
+              <div class="review">
+                <div class="review__top">
+                  <div class="review__name">{{ r.name }}</div>
+                  <div class="review__stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</div>
+                </div>
+                <div class="muted">{{ r.text }}</div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="gallery">
+          {% for img in product.customer_photos %}
+            <div class="thumb" style="background-image:url('{{ img }}')"></div>
+          {% endfor %}
+          {% if product.customer_photos|length == 0 %}
+            <div class="muted small">Customer photos will appear here.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="product__right">
+      <div class="chip">{{ product.series }}</div>
+      <h2>{{ product.name }}</h2>
+      <div class="muted">{{ product.short_desc }}</div>
+
+      <div class="priceRow">
+        <div class="priceNow">$<span id="priceNow">{{ unit_price }}</span></div>
+        <div class="muted small">Base: ${{ product.base_price }}</div>
+      </div>
+
+      <!-- Configurator (A) -->
+      <div class="panel">
+        <div class="panel__head">
+          <div class="panel__title">Customize</div>
+          <div class="muted small">Frame • Size • Poster theme</div>
+        </div>
+
+        <form method="POST" action="/cart/add" id="addForm">
+          <input type="hidden" name="slug" value="{{ product.slug }}"/>
+          <input type="hidden" name="qty" value="1"/>
+
+          <div class="field">
+            <label>Frame</label>
+            <select class="select" name="frame" id="frame">
+              <option value="black" {% if config.frame == "black" %}selected{% endif %}>Black (default)</option>
+              <option value="walnut" {% if config.frame == "walnut" %}selected{% endif %}>Walnut (+$15)</option>
+              <option value="white" {% if config.frame == "white" %}selected{% endif %}>White (+$10)</option>
+              <option value="gold" {% if config.frame == "gold" %}selected{% endif %}>Matte Gold (+$20)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Size</label>
+            <select class="select" name="size" id="size">
+              <option value="A4" {% if config.size == "A4" %}selected{% endif %}>A4</option>
+              <option value="A3" {% if config.size == "A3" %}selected{% endif %}>A3 (+$12)</option>
+              <option value="12x18" {% if config.size == "12x18" %}selected{% endif %}>12x18 (+$18)</option>
+              <option value="18x24" {% if config.size == "18x24" %}selected{% endif %}>18x24 (+$28)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Poster Theme</label>
+            <select class="select" name="poster_theme" id="poster_theme">
+              <option value="racing_stripes" {% if config.poster_theme == "racing_stripes" %}selected{% endif %}>Racing Stripes</option>
+              <option value="circuit" {% if config.poster_theme == "circuit" %}selected{% endif %}>Circuit (+$8)</option>
+              <option value="minimal" {% if config.poster_theme == "minimal" %}selected{% endif %}>Minimal</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <button type="submit" class="btn btn--primary" id="addToCartBtn">Add to cart</button>
+            <button type="button" class="btn btn--ghost" id="saveWishlistBtn">Save design</button>
+          </div>
+
+          <div class="muted small">
+            Build a Set: add 3+ posters to cart to unlock bundle discount.
+          </div>
+        </form>
+      </div>
+
+      <!-- B) Wall preview -->
+      <div class="panel">
+        <div class="panel__head">
+          <div class="panel__title">Wall preview</div>
+          <div class="muted small">Upload a wall photo, drag/resize poster</div>
+        </div>
+
+        <div class="row">
+          <input type="file" id="wallFile" class="input" accept="image/*"/>
+          <button class="btn btn--ghost" id="resetWallBtn" type="button">Reset</button>
+        </div>
+
+        <div class="wallWrap">
+          <canvas id="wallCanvas" width="900" height="600"></canvas>
+        </div>
+      </div>
+
+      <!-- Specs -->
+      <div class="panel">
+        <div class="panel__head">
+          <div class="panel__title">Specs</div>
+          <div class="muted small">Displayed in poster style</div>
+        </div>
+        <div class="specGrid">
+          <div><div class="muted small">POWER</div><div class="specVal">{{ product.specs.power_hp }} HP</div></div>
+          <div><div class="muted small">TORQUE</div><div class="specVal">{% if product.specs.torque_lbft != 0 %}{{ product.specs.torque_lbft }} LB-FT{% else %}—{% endif %}</div></div>
+          <div><div class="muted small">0–100</div><div class="specVal">{{ product.specs.zero_to_100 }}</div></div>
+          <div><div class="muted small">TOP SPEED</div><div class="specVal">{{ product.specs.top_speed }}</div></div>
+          <div><div class="muted small">YEAR</div><div class="specVal">{{ product.specs.year }}</div></div>
+        </div>
+      </div>
+
+      <div class="panel subtle">
+        <div class="muted small">
+          Share this exact configuration:
+          <button class="linkbtn" id="copyLinkBtn" type="button">Copy link</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  window.__PRODUCT__ = {
+    slug: "{{ product.slug }}",
+    base_price: {{ product.base_price }},
+    poster: "{{ product.images.poster }}"
+  };
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/product.js"></script>
+<script src="/static/js/wall_preview.js"></script>
+{% endblock %}
