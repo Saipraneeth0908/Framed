@@ -1,66 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>{{ title if title else "Motorsport Gallery Store" }}</title>
-  <link rel="stylesheet" href="/static/css/styles.css"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title|default('Motorsport Gallery') }}</title>
+  <meta name="description" content="{{ page_description|default('Customizable framed automotive posters with a race-telemetry aesthetic.') }}">
+  <meta name="theme-color" content="#080a0d">
+  <meta property="og:title" content="{{ page_title|default('Motorsport Gallery') }}">
+  <meta property="og:description" content="{{ page_description|default('Customizable framed automotive posters with a race-telemetry aesthetic.') }}">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
-  <header class="topbar">
-    <div class="container topbar__inner">
-      <a class="brand" href="/">MOTORSPORT<span>GALLERY</span></a>
+<body data-page="{{ request.endpoint }}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-      <nav class="nav">
-        <a href="/shop">Shop</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
+  <div class="announcement" role="note">
+    <div class="container announcement__inner">
+      <span><strong>Gallery launch preview</strong> — Checkout and contact are currently demo experiences.</span>
+      <a href="{{ url_for('about') }}">How it works</a>
+    </div>
+  </div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="container site-header__inner">
+      <button class="icon-button menu-toggle" id="menuToggle" type="button" aria-controls="mobileNav" aria-expanded="false">
+        <span class="sr-only">Open navigation</span><span aria-hidden="true">☰</span>
+      </button>
+      <a class="brand" href="{{ url_for('home') }}" aria-label="Motorsport Gallery home">
+        <span class="brand__mark" aria-hidden="true">MG</span>
+        <span class="brand__text">MOTORSPORT<em>GALLERY</em></span>
+      </a>
+      <nav class="desktop-nav" aria-label="Primary navigation">
+        <a href="{{ url_for('shop') }}" {% if request.endpoint in ('shop','product') %}aria-current="page"{% endif %}>Shop</a>
+        <a href="{{ url_for('shop') }}?focus=featured">Featured</a>
+        <a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}aria-current="page"{% endif %}>Our process</a>
+        <a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}aria-current="page"{% endif %}>Contact</a>
       </nav>
-
-      <div class="topbar__actions">
-        <button class="iconbtn" id="wishlistBtn" title="Wishlist">
-          ❤ <span class="badge" id="wishlistCount">0</span>
+      <div class="header-actions">
+        <a class="icon-button search-link" href="{{ url_for('shop') }}#catalog-controls"><span aria-hidden="true">⌕</span><span class="sr-only">Search products</span></a>
+        <button class="icon-button" id="wishlistBtn" type="button" aria-controls="wishlistDrawer" aria-expanded="false">
+          <span aria-hidden="true">♡</span><span class="sr-only">Open saved designs</span><span class="count" id="wishlistCount">0</span>
         </button>
-        <button class="iconbtn" id="cartDrawerBtn" title="Cart">
-          🛒 <span class="badge" id="cartCount">0</span>
+        <button class="icon-button" id="cartDrawerBtn" type="button" aria-controls="cartDrawer" aria-expanded="false">
+          <span aria-hidden="true">▱</span><span class="sr-only">Open cart</span><span class="count" id="cartCount">{{ cart_count }}</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Cart Drawer -->
-  <aside class="drawer" id="cartDrawer" aria-hidden="true">
-    <div class="drawer__header">
-      <div class="drawer__title">Your Cart</div>
-      <button class="iconbtn" id="closeDrawerBtn">✕</button>
-    </div>
-    <div class="drawer__body" id="drawerBody">
-      <div class="muted">Open the cart page to edit items.</div>
-      <a class="btn btn--primary" href="/cart">Go to Cart</a>
+  <aside class="drawer drawer--left" id="mobileNav" aria-hidden="true" aria-labelledby="mobileNavTitle">
+    <div class="drawer__header"><div><span class="eyebrow">Navigation</span><h2 id="mobileNavTitle">Explore the gallery</h2></div><button class="icon-button drawer-close" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close navigation</span></button></div>
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <a href="{{ url_for('home') }}">Home <span>01</span></a><a href="{{ url_for('shop') }}">Shop all <span>02</span></a><a href="{{ url_for('about') }}">Our process <span>03</span></a><a href="{{ url_for('contact') }}">Contact <span>04</span></a>
+    </nav>
+  </aside>
+
+  <aside class="drawer" id="wishlistDrawer" aria-hidden="true" aria-labelledby="wishlistTitle">
+    <div class="drawer__header"><div><span class="eyebrow">Your collection</span><h2 id="wishlistTitle">Saved designs</h2></div><button class="icon-button drawer-close" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close wishlist</span></button></div>
+    <div class="drawer__body" id="wishlistBody"></div>
+  </aside>
+
+  <aside class="drawer" id="cartDrawer" aria-hidden="true" aria-labelledby="cartTitle">
+    <div class="drawer__header"><div><span class="eyebrow">Bundle progress</span><h2 id="cartTitle">Your cart</h2></div><button class="icon-button drawer-close" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close cart</span></button></div>
+    <div class="drawer__body">
+      <div class="drawer-stat"><strong>{{ cart_count }}</strong><span>poster{% if cart_count != 1 %}s{% endif %} selected</span></div>
+      <div class="progress" aria-label="{{ [cart_count, 3]|min }} of 3 posters toward bundle discount"><span style="width: {{ ([cart_count, 3]|min / 3 * 100)|round }}%"></span></div>
+      <p class="muted">{% if cart_count >= 3 %}Your 10% set discount is unlocked.{% else %}Add {{ 3 - cart_count }} more to unlock 10% off your set.{% endif %}</p>
+      <a class="button button--primary button--block" href="{{ url_for('cart') }}">View cart</a>
+      <a class="button button--secondary button--block" href="{{ url_for('shop') }}">Continue exploring</a>
     </div>
   </aside>
-  <div class="backdrop" id="drawerBackdrop"></div>
+  <div class="backdrop" id="drawerBackdrop" hidden></div>
 
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+  <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
 
-  <footer class="footer">
-    <div class="container footer__inner">
-      <div>
-        <div class="footer__brand">Motorsport Gallery</div>
-        <div class="muted">Framed car posters with a race-telemetry aesthetic.</div>
-      </div>
-      <div class="footer__links">
-        <a href="/shop">Shop</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/checkout">Checkout</a>
-      </div>
+  <footer class="site-footer">
+    <div class="container footer-cta">
+      <div><span class="eyebrow">Build your wall</span><h2>Turn automotive icons into gallery pieces.</h2></div>
+      <a class="button button--light" href="{{ url_for('shop') }}">Explore all posters</a>
     </div>
+    <div class="container footer-grid">
+      <div class="footer-brand"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">MG</span><span class="brand__text">MOTORSPORT<em>GALLERY</em></span></a><p>Customizable framed car posters with a race-telemetry point of view.</p></div>
+      <div><h3>Explore</h3><a href="{{ url_for('shop') }}">Shop</a><a href="{{ url_for('about') }}">Our process</a><a href="{{ url_for('cart') }}">Cart</a></div>
+      <div><h3>Help</h3><a href="{{ url_for('contact') }}">Contact</a><a href="{{ url_for('home') }}#faq">FAQ</a><span class="footer-note">Payments are not yet enabled.</span></div>
+      <div><h3>Collections</h3><a href="{{ url_for('shop') }}?q=supercar">Supercars</a><a href="{{ url_for('shop') }}?q=muscle">Muscle</a><a href="{{ url_for('shop') }}?q=classic">Track icons</a></div>
+    </div>
+    <div class="container footer-bottom"><span>© 2026 Motorsport Gallery. Concept storefront.</span><span>Designed for automotive art enthusiasts.</span></div>
   </footer>
 
-  <script src="/static/js/app.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

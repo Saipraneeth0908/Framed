@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "macros/cards.html" import product_card %}
 {% block content %}
 <section class="section">
   <div class="container product">
     <div class="product__left">
       <!-- Main poster preview -->
       <div class="posterFrame" id="posterFrame">
-        <img id="posterImg" src="{{ product.images.poster }}" alt="Poster preview" onerror="this.style.display='none'"/>
+        {% if product.images.poster_available %}<img id="posterImg" src="{{ product.images.poster }}" alt="{{ product.name }} poster preview" decoding="async" onerror="this.style.display='none'"/>{% endif %}
         <div class="posterFallback" id="posterFallback">
           <div class="fallbackTitle">{{ product.brand }}</div>
           <div class="fallbackName">{{ product.name }}</div>
@@ -14,15 +15,15 @@
       </div>
 
       <!-- 360 view -->
-      <div class="panel">
+      <div class="panel" {% if product.images.available_frames|length < 4 %}data-fallback-viewer{% endif %}>
         <div class="panel__head">
-          <div class="panel__title">360° view (drag)</div>
-          <div class="muted small">Uses frames list if available, otherwise uses poster</div>
+          <div class="panel__title">{% if product.images.available_frames|length >= 4 %}360° view (drag){% else %}Detail view{% endif %}</div>
+          <div class="muted small">{% if product.images.available_frames|length >= 4 %}Drag horizontally to rotate{% else %}360° media is not available for this design yet{% endif %}</div>
         </div>
         <div class="viewer360" id="viewer360"
-             data-frames='{{ product.images.frames360 | tojson }}'
+             data-frames='{{ product.images.available_frames | tojson }}'
              data-fallback='{{ product.images.poster }}'>
-          <img id="viewerImg" src="{{ product.images.poster }}" alt="360 view"/>
+          {% if product.images.poster_available %}<img id="viewerImg" src="{{ product.images.poster }}" alt="Poster detail view"/>{% else %}<div class="image-fallback"><span>{{ product.brand }}</span><strong>{{ product.slug.split('-')[0]|upper }}</strong></div>{% endif %}
           <div class="viewerHint">Drag left/right</div>
         </div>
       </div>
@@ -50,10 +51,10 @@
         </div>
 
         <div class="gallery">
-          {% for img in product.customer_photos %}
+          {% for img in product.available_customer_photos %}
             <div class="thumb" style="background-image:url('{{ img }}')"></div>
           {% endfor %}
-          {% if product.customer_photos|length == 0 %}
+          {% if product.available_customer_photos|length == 0 %}
             <div class="muted small">Customer photos will appear here.</div>
           {% endif %}
         </div>
@@ -61,8 +62,8 @@
     </div>
 
     <div class="product__right">
-      <div class="chip">{{ product.series }}</div>
-      <h2>{{ product.name }}</h2>
+      <div class="eyebrow">{{ product.series }} · {{ product.brand }}</div>
+      <h1 class="product-title">{{ product.name }}</h1>
       <div class="muted">{{ product.short_desc }}</div>
 
       <div class="priceRow">
@@ -77,12 +78,12 @@
           <div class="muted small">Frame • Size • Poster theme</div>
         </div>
 
-        <form method="POST" action="/cart/add" id="addForm">
+        <form method="POST" action="/cart/add" id="addForm" aria-describedby="priceStatus">
           <input type="hidden" name="slug" value="{{ product.slug }}"/>
           <input type="hidden" name="qty" value="1"/>
 
           <div class="field">
-            <label>Frame</label>
+            <label for="frame">Frame</label>
             <select class="select" name="frame" id="frame">
               <option value="black" {% if config.frame == "black" %}selected{% endif %}>Black (default)</option>
               <option value="walnut" {% if config.frame == "walnut" %}selected{% endif %}>Walnut (+$15)</option>
@@ -92,7 +93,7 @@
           </div>
 
           <div class="field">
-            <label>Size</label>
+            <label for="size">Size</label>
             <select class="select" name="size" id="size">
               <option value="A4" {% if config.size == "A4" %}selected{% endif %}>A4</option>
               <option value="A3" {% if config.size == "A3" %}selected{% endif %}>A3 (+$12)</option>
@@ -102,7 +103,7 @@
           </div>
 
           <div class="field">
-            <label>Poster Theme</label>
+            <label for="poster_theme">Poster Theme</label>
             <select class="select" name="poster_theme" id="poster_theme">
               <option value="racing_stripes" {% if config.poster_theme == "racing_stripes" %}selected{% endif %}>Racing Stripes</option>
               <option value="circuit" {% if config.poster_theme == "circuit" %}selected{% endif %}>Circuit (+$8)</option>
@@ -118,6 +119,7 @@
           <div class="muted small">
             Build a Set: add 3+ posters to cart to unlock bundle discount.
           </div>
+          <div class="muted small" id="priceStatus" role="status" aria-live="polite"></div>
         </form>
       </div>
 
@@ -129,6 +131,7 @@
         </div>
 
         <div class="row">
+          <label class="sr-only" for="wallFile">Upload a room photo</label>
           <input type="file" id="wallFile" class="input" accept="image/*"/>
           <button class="btn btn--ghost" id="resetWallBtn" type="button">Reset</button>
         </div>
@@ -163,11 +166,15 @@
     </div>
   </div>
 </section>
+{% if related %}
+<section class="section section--dark">
+  <div class="container"><div class="section-heading section-heading--inverse"><div><span class="eyebrow">Keep exploring</span><h2>More from the grid</h2></div><a class="text-link" href="{{ url_for('shop') }}">Shop all posters →</a></div><div class="product-grid">{% for p in related %}{{ product_card(p) }}{% endfor %}</div></div>
+</section>
+{% endif %}
 
 <script>
   window.__PRODUCT__ = {
     slug: "{{ product.slug }}",
-    base_price: {{ product.base_price }},
     poster: "{{ product.images.poster }}"
   };
 </script>

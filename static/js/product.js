@@ -19,16 +19,21 @@ async function updatePrice(){
   const size = qs("#size").value;
   const poster_theme = qs("#poster_theme").value;
 
+  const status = qs("#priceStatus");
+  status.textContent = "Updating price…";
+  try {
   const res = await fetch("/api/price", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
-      base_price: window.__PRODUCT__.base_price,
+      slug: window.__PRODUCT__.slug,
       frame, size, poster_theme
     })
   });
+  if(!res.ok) throw new Error("Price update failed");
   const data = await res.json();
   qs("#priceNow").textContent = data.price.toFixed(2);
+  status.textContent = "Price updated.";
 
   // Light preview “feel” based on poster_theme (simple overlay changes)
   const frameEl = qs("#posterFrame");
@@ -51,6 +56,9 @@ async function updatePrice(){
   url.searchParams.set("size", size);
   url.searchParams.set("poster_theme", poster_theme);
   window.history.replaceState({}, "", url.toString());
+  } catch (error) {
+    status.textContent = "Price could not be updated. Try again.";
+  }
 }
 
 function initConfigurator(){
@@ -115,6 +123,7 @@ function init360(){
   const frames = JSON.parse(viewer.dataset.frames || "[]");
   const fallback = viewer.dataset.fallback;
   const img = qs("#viewerImg");
+  if(!img) return;
 
   const frameList = (frames && frames.length >= 4) ? frames : [fallback, fallback, fallback, fallback];
   let idx = 0;

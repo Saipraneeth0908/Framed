@@ -1,60 +1,23 @@
 {% extends "base.html" %}
+{% from "macros/cards.html" import product_card %}
 {% block content %}
-<section class="section">
+<section class="catalog-hero">
+  <div class="container"><span class="eyebrow">The complete grid</span><h1>Find your<br><em>wall hero.</em></h1><p>Explore every automotive poster, then configure the frame, scale, and graphic treatment.</p></div>
+</section>
+<section class="section catalog-section">
   <div class="container">
-    <div class="section__head">
-      <h2>Shop</h2>
-      <div class="muted">Search, filter, sort, and build your set.</div>
+    <div class="catalog-heading"><div><span class="eyebrow">Motorsport Gallery / 12 designs</span><h2>All posters</h2></div><p id="resultCount" role="status" aria-live="polite">Showing {{ products|length }} products</p></div>
+    <div class="shopbar" id="catalog-controls" aria-label="Catalog controls">
+      <div class="field search-field"><label for="q">Search</label><input id="q" class="input" type="search" placeholder="Brand, model, or style"></div>
+      <div class="field"><label for="brand">Brand</label><select id="brand" class="select"><option value="">All brands</option></select></div>
+      <div class="field"><label for="color">Color</label><select id="color" class="select"><option value="">All colors</option><option>orange</option><option>yellow</option><option>red</option><option>blue</option><option>white</option><option>grey</option><option>green</option><option>black</option></select></div>
+      <div class="field"><label for="sort">Sort</label><select id="sort" class="select"><option value="featured">Featured first</option><option value="price_asc">Price: Low to high</option><option value="price_desc">Price: High to low</option><option value="name_asc">Name: A to Z</option></select></div>
+      <button id="clear" class="button button--secondary" type="button">Reset</button>
     </div>
-
-    <div class="shopbar">
-      <input id="q" class="input" placeholder="Search by brand, name, tags…"/>
-      <select id="brand" class="select">
-        <option value="">All brands</option>
-      </select>
-      <select id="color" class="select">
-        <option value="">All colors</option>
-        <option>orange</option><option>yellow</option><option>red</option><option>blue</option>
-        <option>white</option><option>grey</option><option>green</option><option>black</option>
-      </select>
-      <select id="sort" class="select">
-        <option value="featured">Featured</option>
-        <option value="price_asc">Price: Low → High</option>
-        <option value="price_desc">Price: High → Low</option>
-        <option value="name_asc">Name: A → Z</option>
-      </select>
-      <button id="clear" class="btn btn--ghost">Clear</button>
-    </div>
-
-    <div class="grid" id="grid">
-      {% for p in products %}
-        <a class="card productCard"
-           href="/product/{{ p.slug }}"
-           data-brand="{{ p.brand }}"
-           data-color="{{ p.color }}"
-           data-price="{{ p.base_price }}"
-           data-featured="{{ '1' if p.featured else '0' }}"
-           data-name="{{ p.name|lower }}"
-           data-tags="{{ (p.tags|join(' '))|lower }}">
-          <div class="card__img" style="background-image:url('{{ p.images.poster }}')">
-            <div class="card__overlay"></div>
-            <div class="card__tag">{{ p.brand }}</div>
-          </div>
-          <div class="card__body">
-            <div class="card__title">{{ p.name }}</div>
-            <div class="muted small">{{ p.short_desc }}</div>
-            <div class="card__meta">
-              <span class="pill">{{ p.color }}</span>
-              <span class="price">from ${{ p.base_price }}</span>
-            </div>
-          </div>
-        </a>
-      {% endfor %}
-    </div>
+    <div class="active-filters" id="activeFilters" aria-label="Active filters"></div>
+    <div class="product-grid" id="grid">{% for p in products %}{{ product_card(p) }}{% endfor %}</div>
+    <div class="empty-state catalog-empty" id="catalogEmpty" hidden><span class="eyebrow">No match found</span><h2>Try a wider line.</h2><p>Clear a filter or search for another brand, model, or poster style.</p><button class="button button--primary" type="button" data-clear-filters>Clear filters</button></div>
   </div>
 </section>
 {% endblock %}
-
-{% block scripts %}
-<script src="/static/js/shop.js"></script>
-{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/shop.js') }}"></script>{% endblock %}
