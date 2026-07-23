@@ -21,16 +21,16 @@
       <div class="checkoutGrid">
         <form class="panel" method="POST">
           <div class="field">
-            <label>Name*</label>
-            <input class="input" name="name" placeholder="Full name"/>
+            <label for="checkout-name">Name*</label>
+            <input class="input" id="checkout-name" name="name" autocomplete="name" required value="{{ form_data.name if form_data else '' }}" placeholder="Full name"/>
           </div>
           <div class="field">
-            <label>Email*</label>
-            <input class="input" name="email" placeholder="you@example.com"/>
+            <label for="checkout-email">Email*</label>
+            <input class="input" id="checkout-email" name="email" type="email" autocomplete="email" required value="{{ form_data.email if form_data else '' }}" placeholder="you@example.com"/>
           </div>
           <div class="field">
-            <label>Shipping Address*</label>
-            <textarea class="input" name="address" rows="4" placeholder="Street, City, State, ZIP"></textarea>
+            <label for="checkout-address">Shipping Address*</label>
+            <textarea class="input" id="checkout-address" name="address" rows="4" autocomplete="street-address" required placeholder="Street, City, State, ZIP">{{ form_data.address if form_data else '' }}</textarea>
           </div>
 
           <button class="btn btn--primary" type="submit">Place order</button>
