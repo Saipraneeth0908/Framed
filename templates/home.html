@@ -2,18 +2,29 @@
 {% from "macros/cards.html" import product_card %}
 {% block content %}
 <section class="hero-home">
+  {% if active_category == 'all' and marquee_images %}
+  <div class="hero-marquee" aria-hidden="true">
+    {% for row in range(3) %}
+    <div class="hero-marquee__row hero-marquee__row--{{ 'left' if row == 1 else 'right' }}">
+      <div class="hero-marquee__track">
+        {% for img in marquee_images + marquee_images %}<span class="hero-frame"><img src="{{ img }}" alt="" loading="lazy"></span>{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
   <div class="container hero-home__grid">
     <div class="hero-home__copy reveal">
-      <span class="eyebrow">Automotive art · engineered to display</span>
-      <h1>Bring the <em>starting grid</em> to your walls.</h1>
-      <p>Collect framed automotive posters, tune every finish, and preview your composition before it reaches the wall.</p>
+      <span class="eyebrow">{{ content.eyebrow }}</span>
+      <h1>{{ content.title[0] }} <em>{{ content.title[1] }}</em> {{ content.title[2] }}</h1>
+      <p>{{ content.subtitle }}</p>
       <div class="button-row"><a class="button button--primary" href="{{ url_for('shop') }}">Explore the collection <span aria-hidden="true">→</span></a><a class="text-link" href="#how-it-works">See how it works</a></div>
-      <dl class="hero-stats"><div><dt>12</dt><dd>Automotive icons</dd></div><div><dt>4</dt><dd>Frame finishes</dd></div><div><dt>3+</dt><dd>Set discount</dd></div></dl>
+      <dl class="hero-stats"><div><dt>{{ design_count }}</dt><dd>{{ active_label }} designs</dd></div><div><dt>4</dt><dd>Frame finishes</dd></div><div><dt>3+</dt><dd>Set discount</dd></div></dl>
     </div>
     <div class="hero-home__visual reveal">
       <div class="speed-lines" aria-hidden="true"></div>
-      <div class="hero-poster"><img src="{{ url_for('static', filename='img/posters/meclaren.jpg') }}" alt="McLaren framed poster from the Motorsport Gallery collection" width="900" height="1200"><span class="hero-poster__label">Featured / 01</span></div>
-      <div class="telemetry-card" aria-hidden="true"><span>720S</span><strong>341</strong><small>KM/H · TOP SPEED</small></div>
+      <div class="hero-poster"><img src="{{ hero_image }}" alt="{{ active_label }} featured framed poster" width="900" height="1200"><span class="hero-poster__label">Featured / 01</span></div>
+      {% if hero_product %}<div class="telemetry-card" aria-hidden="true"><span>{{ active_label|upper }}</span><strong>${{ hero_product.base_price }}</strong><small>USD · FROM</small></div>{% endif %}
     </div>
   </div>
   <a class="scroll-cue" href="#discover"><span>Scroll to discover</span><i aria-hidden="true"></i></a>
@@ -21,11 +32,12 @@
 
 <section class="section section--light" id="discover">
   <div class="container">
-    <div class="section-heading reveal"><div><span class="eyebrow">Find your line</span><h2>Explore by passion</h2></div><p>Start with the machine that matches your wall, then make every detail yours.</p></div>
+    <div class="section-heading reveal"><div><span class="eyebrow">{{ content.collections_eyebrow }}</span><h2>{{ content.collections_title }}</h2></div><p>Start with the piece that matches your wall, then make every detail yours.</p></div>
     <div class="category-grid">
-      <a class="category-card category-card--super" href="{{ url_for('shop') }}?q=supercar"><span class="category-card__number">01</span><div><h3>Supercars</h3><p>Low, fast, and unmistakable.</p><span class="text-link">Discover posters →</span></div></a>
-      <a class="category-card category-card--muscle" href="{{ url_for('shop') }}?q=muscle"><span class="category-card__number">02</span><div><h3>Muscle</h3><p>Raw power in graphic form.</p><span class="text-link">Discover posters →</span></div></a>
-      <a class="category-card category-card--icons" href="{{ url_for('shop') }}?q=classic"><span class="category-card__number">03</span><div><h3>Track icons</h3><p>Motorsport stories worth framing.</p><span class="text-link">Discover posters →</span></div></a>
+      {% set mods = ['super','muscle','icons'] %}
+      {% for c in content.collections %}
+      <a class="category-card category-card--{{ mods[loop.index0 % 3] }}" href="{{ url_for('shop') }}"><span class="category-card__number">{{ '%02d'|format(loop.index) }}</span><div><h3>{{ c[0] }}</h3><p>{{ c[1] }}</p><span class="text-link">Discover posters →</span></div></a>
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -33,28 +45,20 @@
 <section class="section section--dark">
   <div class="container">
     <div class="section-heading section-heading--inverse reveal"><div><span class="eyebrow">Curated grid</span><h2>Front row favorites</h2></div><a class="text-link" href="{{ url_for('shop') }}">View the complete collection →</a></div>
+    {% if featured %}
     <div class="product-grid product-grid--featured">
       {% for p in featured %}{{ product_card(p, lazy=false) }}{% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state"><span class="eyebrow">Coming soon</span><h3>New {{ active_label }} posters are on the way.</h3><p class="muted">This collection is being stocked. Explore the full gallery in the meantime.</p><a class="button button--primary" href="{{ url_for('shop') }}">Browse all posters</a></div>
+    {% endif %}
   </div>
 </section>
 
 <section class="section configurator-story" id="how-it-works">
   <div class="container split-story">
-    <div class="split-story__visual reveal"><div class="frame-demo"><img src="{{ url_for('static', filename='img/posters/meclaren.jpg') }}" alt="McLaren poster shown with a dark gallery frame" loading="lazy" width="900" height="1200"></div><span class="orbit-label orbit-label--one">01 / Frame</span><span class="orbit-label orbit-label--two">02 / Size</span><span class="orbit-label orbit-label--three">03 / Theme</span></div>
-    <div class="split-story__copy reveal"><span class="eyebrow">Your build sheet</span><h2>One car.<br>Made distinctly yours.</h2><p>Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build.</p><ol class="process-list"><li><span>01</span><div><strong>Pick your icon</strong><small>Browse twelve distinct automotive subjects.</small></div></li><li><span>02</span><div><strong>Tune the presentation</strong><small>Combine four frames, four sizes, and three themes.</small></div></li><li><span>03</span><div><strong>Preview your wall</strong><small>Upload a room photo and position the piece.</small></div></li></ol><a class="button button--primary" href="{{ url_for('product', slug='mclaren-720s-orange') }}">Try the configurator</a></div>
-  </div>
-</section>
-
-<section class="section theme-explorer" aria-labelledby="theme-title">
-  <div class="container">
-    <div class="section-heading reveal"><div><span class="eyebrow">Garage selector</span><h2 id="theme-title">Choose your energy</h2></div><p>Filter the gallery by the character you want the room to carry.</p></div>
-    <div class="tabs" data-tabs>
-      <div class="tab-list" role="tablist" aria-label="Poster themes">
-        {% for name in themes %}<button role="tab" id="tab-{{ loop.index }}" aria-controls="panel-{{ loop.index }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ '0' if loop.first else '-1' }}">{{ name }}</button>{% endfor %}
-      </div>
-      {% for name, items in themes.items() %}<div class="tab-panel" id="panel-{{ loop.index }}" role="tabpanel" aria-labelledby="tab-{{ loop.index }}" {% if not loop.first %}hidden{% endif %}><div class="theme-strip">{% for p in items[:4] %}<a href="{{ url_for('product', slug=p.slug) }}"><span>{{ '%02d'|format(loop.index) }}</span><div><strong>{{ p.name }}</strong><small>{{ p.brand }} · From ${{ p.base_price }}</small></div><i aria-hidden="true">→</i></a>{% endfor %}</div></div>{% endfor %}
-    </div>
+    <div class="split-story__visual reveal"><div class="frame-demo"><img src="{{ story_image }}" alt="{{ active_label }} poster shown with a gallery frame" loading="lazy" width="900" height="1200"></div><span class="orbit-label orbit-label--one">01 / Frame</span><span class="orbit-label orbit-label--two">02 / Size</span><span class="orbit-label orbit-label--three">03 / Theme</span></div>
+    <div class="split-story__copy reveal"><span class="eyebrow">Your build sheet</span><h2>{{ content.story[0] }}<br>{{ content.story[1] }}</h2><p>{{ content.story[2] }}</p><ol class="process-list">{% for s in content.steps %}<li><span>{{ '%02d'|format(loop.index) }}</span><div><strong>{{ s[0] }}</strong><small>{{ s[1] }}</small></div></li>{% endfor %}</ol><a class="button button--primary" href="{% if hero_product %}{{ url_for('product', slug=hero_product.slug) }}{% else %}{{ url_for('shop') }}{% endif %}">Try the configurator</a></div>
   </div>
 </section>
 
@@ -63,11 +67,11 @@
 </section>
 
 <section class="section brand-story">
-  <div class="container brand-story__grid"><div class="brand-story__title reveal"><span class="eyebrow">Why Motorsport Gallery</span><h2>Poster design with telemetry in its DNA.</h2></div><div class="brand-story__copy reveal"><p>Motorsport Gallery is a concept storefront for framed car art. Every design combines automotive character with clean technical typography, configurable finishes, and tools that help you plan a complete display.</p><a class="text-link" href="{{ url_for('about') }}">Read about the process →</a></div></div>
+  <div class="container brand-story__grid"><div class="brand-story__title reveal"><span class="eyebrow">Why Framed Obsessions</span><h2>Whatever you're into, framed right.</h2></div><div class="brand-story__copy reveal"><p>Framed Obsessions is a concept storefront for framed art across the things people obsess over — Hot Wheels, cricket, anime, nature, and motivation. Pick a category to enter its world, then combine configurable frames, sizes, and finishes to plan a complete display.</p><a class="text-link" href="{{ url_for('about') }}">Read about the process →</a></div></div>
 </section>
 
 <section class="section faq" id="faq">
-  <div class="container faq__grid"><div><span class="eyebrow">Pit-lane answers</span><h2>Frequently asked questions</h2><p>What the current gallery experience supports today.</p></div><div class="accordion">
+  <div class="container faq__grid"><div><span class="eyebrow">Answers</span><h2>Frequently asked questions</h2><p>What the current gallery experience supports today.</p></div><div class="accordion">
     <details><summary>What can I customize?<span aria-hidden="true">+</span></summary><p>Every product supports a choice of frame, size, and poster theme. The displayed price updates with those selections.</p></details>
     <details><summary>How does the set discount work?<span aria-hidden="true">+</span></summary><p>The cart automatically applies 10% off when the total quantity reaches three or more posters.</p></details>
     <details><summary>Can I preview a poster in my room?<span aria-hidden="true">+</span></summary><p>Yes. Product pages include a local wall-preview tool. Your uploaded room photo stays in your browser and is not sent to the server.</p></details>
@@ -76,7 +80,6 @@
 </section>
 
 <section class="section updates" id="updates">
-  <div class="container updates__inner"><div><span class="eyebrow">Stay in the slipstream</span><h2>Get gallery updates.</h2><p>This preview form validates your email but is not connected to a mailing provider yet.</p></div><form action="{{ url_for('newsletter') }}" method="post" class="updates-form" novalidate><label for="newsletter-email">Email address</label><div><input id="newsletter-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"><button class="button button--primary" type="submit">Join updates</button></div>{% if newsletter_status == 'success' %}<p class="form-message form-message--success" role="status">Thanks — the form is ready for a future mailing integration.</p>{% elif newsletter_status == 'error' %}<p class="form-message form-message--error" role="alert">Enter a valid email address.</p>{% endif %}</form></div>
+  <div class="container updates__inner"><div><span class="eyebrow">Stay in the loop</span><h2>Get gallery updates.</h2><p>This preview form validates your email but is not connected to a mailing provider yet.</p></div><form action="{{ url_for('newsletter') }}" method="post" class="updates-form" novalidate><label for="newsletter-email">Email address</label><div><input id="newsletter-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"><button class="button button--primary" type="submit">Join updates</button></div>{% if newsletter_status == 'success' %}<p class="form-message form-message--success" role="status">Thanks — the form is ready for a future mailing integration.</p>{% elif newsletter_status == 'error' %}<p class="form-message form-message--error" role="alert">Enter a valid email address.</p>{% endif %}</form></div>
 </section>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/home.js') }}"></script>{% endblock %}

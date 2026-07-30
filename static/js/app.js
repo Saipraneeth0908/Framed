@@ -25,9 +25,9 @@ function renderWishlist() {
   }
   body.innerHTML = items.map(item => `
     <div class="wishlist-item">
-      <a href="/product/${encodeURIComponent(item.slug)}?frame=${encodeURIComponent(item.frame)}&size=${encodeURIComponent(item.size)}&poster_theme=${encodeURIComponent(item.poster_theme)}">
-        <strong>${item.slug.replaceAll("-", " ")}</strong>
-        <small>${item.frame} · ${item.size} · ${item.poster_theme.replaceAll("_", " ")}</small>
+      <a href="/product/${encodeURIComponent(item.slug)}">
+        <strong>${item.name || item.slug.replaceAll("-", " ")}</strong>
+        ${item.frame ? `<small>${item.frame} · ${item.size} · ${item.poster_theme.replaceAll("_", " ")}</small>` : ""}
       </a>
       <button class="wishlist-remove" type="button" data-remove-wishlist="${item.id}" aria-label="Remove saved design">Remove</button>
     </div>`).join("");

@@ -3,21 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ page_title|default('Motorsport Gallery') }}</title>
-  <meta name="description" content="{{ page_description|default('Customizable framed automotive posters with a race-telemetry aesthetic.') }}">
+  <title>{{ page_title|default('Framed Obsessions') }}</title>
+  <meta name="description" content="{{ page_description|default('Customizable framed posters across Hot Wheels, cricket, anime, nature, and motivation themes.') }}">
   <meta name="theme-color" content="#080a0d">
-  <meta property="og:title" content="{{ page_title|default('Motorsport Gallery') }}">
-  <meta property="og:description" content="{{ page_description|default('Customizable framed automotive posters with a race-telemetry aesthetic.') }}">
+  <meta property="og:title" content="{{ page_title|default('Framed Obsessions') }}">
+  <meta property="og:description" content="{{ page_description|default('Customizable framed posters across Hot Wheels, cricket, anime, nature, and motivation themes.') }}">
   <meta property="og:type" content="website">
-  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/logo-favicon.png') }}" type="image/png">
+  <script>(function(){var r=document.documentElement;var u=new URLSearchParams(location.search).get('cat');var c=u||localStorage.getItem('fo-category')||'all';if(u)localStorage.setItem('fo-category',u);if(c!=='all')r.setAttribute('data-theme',c);r.setAttribute('data-cat',c);})();</script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='20260727-framed4') }}">
 </head>
 <body data-page="{{ request.endpoint }}">
   <a class="skip-link" href="#main-content">Skip to content</a>
 
+  <div class="brand-bar">
+    <div class="container brand-bar__inner">
+      <a class="fo-logo" href="{{ url_for('home') }}" aria-label="Framed Obsessions home">
+        <img src="{{ url_for('static', filename='img/logo-lockup.png') }}" alt="Framed Obsessions"
+             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fo-logo__text',textContent:'FRAMED OBSESSIONS'}))">
+      </a>
+      <div class="cat-quick">
+        <nav class="cat-icons" aria-label="Shop by category">
+          {% for c in categories %}
+          <button type="button" class="cat-icon" data-cat-btn="{{ c.key }}" data-label="{{ c.label }}" data-tagline="{{ c.tagline }}" aria-pressed="false" aria-label="{{ c.label }}" title="{{ c.label }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            {%- if c.key == 'hotwheels' -%}<path d="M3 13l2-5a2 2 0 0 1 1.9-1.3h10.2A2 2 0 0 1 19 8l2 5v4h-2M5 17H3v-4h18"/><circle cx="7.5" cy="17" r="1.7"/><circle cx="16.5" cy="17" r="1.7"/>
+            {%- elif c.key == 'cricket' -%}<circle cx="6.5" cy="6.5" r="2.4"/><path d="M14 5l5 5-9 9-2.5-2.5zM8 15l-4 4"/>
+            {%- elif c.key == 'anime' -%}<path d="M12 3l1.9 5.6L19 10l-5.1 1.4L12 17l-1.9-5.6L5 10l5.1-1.4z"/>
+            {%- elif c.key == 'nature' -%}<path d="M4 20s0-9.5 8.5-11.5c0 0 5-1 7.5-2.5 0 0 1.5 12-8 14.5-3 .8-5 .3-6-.5"/><path d="M6.5 17.5c3-4 6.5-6 9-7"/>
+            {%- else -%}<path d="M3 20l6-10.5 4 5.5 2.5-3.5L21 20z"/>
+            {%- endif -%}
+            </svg>
+          </button>
+          {% endfor %}
+        </nav>
+        <details class="cat-switch">
+          <summary aria-label="Browse frame categories"><span class="cat-switch__eyebrow">Browse frames</span><strong data-cat-current>All frames</strong><i aria-hidden="true">▾</i></summary>
+          <div class="cat-switch__menu" role="menu">
+            <button type="button" role="menuitem" data-cat-btn="all" data-label="All frames" data-tagline="Every obsession, framed." aria-pressed="true">All frames</button>
+            {% for c in categories %}<button type="button" role="menuitem" data-cat-btn="{{ c.key }}" data-label="{{ c.label }}" data-tagline="{{ c.tagline }}" aria-pressed="false">{{ c.label }}</button>{% endfor %}
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
   <div class="announcement" role="note">
     <div class="container announcement__inner">
-      <span><strong>Gallery launch preview</strong> — Checkout and contact are currently demo experiences.</span>
+      <span><strong>Launch preview</strong> — pick a frame category above to reskin the store. Checkout and contact are demo experiences.</span>
       <a href="{{ url_for('about') }}">How it works</a>
     </div>
   </div>
@@ -27,9 +60,8 @@
       <button class="icon-button menu-toggle" id="menuToggle" type="button" aria-controls="mobileNav" aria-expanded="false">
         <span class="sr-only">Open navigation</span><span aria-hidden="true">☰</span>
       </button>
-      <a class="brand" href="{{ url_for('home') }}" aria-label="Motorsport Gallery home">
-        <span class="brand__mark" aria-hidden="true">MG</span>
-        <span class="brand__text">MOTORSPORT<em>GALLERY</em></span>
+      <a class="brand" href="{{ url_for('home') }}" aria-label="Framed Obsessions home">
+        <img class="brand__logo" src="{{ url_for('static', filename='img/logo-lockup-light.png') }}" alt="Framed Obsessions" height="34">
       </a>
       <nav class="desktop-nav" aria-label="Primary navigation">
         <a href="{{ url_for('shop') }}" {% if request.endpoint in ('shop','product') %}aria-current="page"{% endif %}>Shop</a>
@@ -77,19 +109,20 @@
 
   <footer class="site-footer">
     <div class="container footer-cta">
-      <div><span class="eyebrow">Build your wall</span><h2>Turn automotive icons into gallery pieces.</h2></div>
+      <div><span class="eyebrow">Build your wall</span><h2>Turn your obsessions into gallery pieces.</h2></div>
       <a class="button button--light" href="{{ url_for('shop') }}">Explore all posters</a>
     </div>
     <div class="container footer-grid">
-      <div class="footer-brand"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">MG</span><span class="brand__text">MOTORSPORT<em>GALLERY</em></span></a><p>Customizable framed car posters with a race-telemetry point of view.</p></div>
+      <div class="footer-brand"><a class="brand" href="{{ url_for('home') }}"><img class="brand__logo" src="{{ url_for('static', filename='img/logo-lockup-light.png') }}" alt="Framed Obsessions" height="38"></a><p>Customizable framed posters across Hot Wheels, cricket, anime, nature, and motivation.</p></div>
       <div><h3>Explore</h3><a href="{{ url_for('shop') }}">Shop</a><a href="{{ url_for('about') }}">Our process</a><a href="{{ url_for('cart') }}">Cart</a></div>
       <div><h3>Help</h3><a href="{{ url_for('contact') }}">Contact</a><a href="{{ url_for('home') }}#faq">FAQ</a><span class="footer-note">Payments are not yet enabled.</span></div>
       <div><h3>Collections</h3><a href="{{ url_for('shop') }}?q=supercar">Supercars</a><a href="{{ url_for('shop') }}?q=muscle">Muscle</a><a href="{{ url_for('shop') }}?q=classic">Track icons</a></div>
     </div>
-    <div class="container footer-bottom"><span>© 2026 Motorsport Gallery. Concept storefront.</span><span>Designed for automotive art enthusiasts.</span></div>
+    <div class="container footer-bottom"><span>© 2026 Framed Obsessions. Concept storefront.</span><span>Frame every obsession.</span></div>
   </footer>
 
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/theme.js', v='20260727-framed') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v='20260723-redesign') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

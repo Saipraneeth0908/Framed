@@ -1,161 +1,62 @@
-function qs(sel, root=document){ return root.querySelector(sel); }
-function getWishlist(){
-  try { return JSON.parse(localStorage.getItem("wishlist") || "[]"); } catch(e){ return []; }
+function qs(sel, root = document) { return root.querySelector(sel); }
+
+function getWishlist() {
+  try { return JSON.parse(localStorage.getItem("wishlist") || "[]"); } catch (e) { return []; }
 }
-function setWishlist(items){
+function setWishlist(items) {
   localStorage.setItem("wishlist", JSON.stringify(items));
   const el = qs("#wishlistCount");
-  if(el) el.textContent = String(items.length);
-}
-function bumpCartCount(){
-  const n = parseInt(localStorage.getItem("cartCount") || "0", 10) || 0;
-  localStorage.setItem("cartCount", String(n + 1));
-  const el = qs("#cartCount");
-  if(el) el.textContent = String(n + 1);
+  if (el) el.textContent = String(items.length);
 }
 
-async function updatePrice(){
-  const frame = qs("#frame").value;
-  const size = qs("#size").value;
-  const poster_theme = qs("#poster_theme").value;
-
-  const status = qs("#priceStatus");
-  status.textContent = "Updating price…";
-  try {
-  const res = await fetch("/api/price", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      slug: window.__PRODUCT__.slug,
-      frame, size, poster_theme
-    })
-  });
-  if(!res.ok) throw new Error("Price update failed");
-  const data = await res.json();
-  qs("#priceNow").textContent = data.price.toFixed(2);
-  status.textContent = "Price updated.";
-
-  // Light preview “feel” based on poster_theme (simple overlay changes)
-  const frameEl = qs("#posterFrame");
-  frameEl.style.boxShadow = (poster_theme === "circuit")
-    ? "0 18px 45px rgba(0,0,0,.55), 0 0 0 1px rgba(255,211,90,.18) inset"
-    : "0 18px 45px rgba(0,0,0,.55)";
-
-  // Visual cue for frame selection (border tint)
-  const tint = {
-    black: "rgba(255,255,255,.10)",
-    walnut: "rgba(255,138,31,.18)",
-    white: "rgba(233,238,246,.18)",
-    gold: "rgba(255,211,90,.25)"
-  }[frame] || "rgba(255,255,255,.10)";
-  frameEl.style.borderColor = tint;
-
-  // Update shareable URL without reloading
-  const url = new URL(window.location.href);
-  url.searchParams.set("frame", frame);
-  url.searchParams.set("size", size);
-  url.searchParams.set("poster_theme", poster_theme);
-  window.history.replaceState({}, "", url.toString());
-  } catch (error) {
-    status.textContent = "Price could not be updated. Try again.";
-  }
-}
-
-function initConfigurator(){
-  ["#frame","#size","#poster_theme"].forEach(sel => qs(sel).addEventListener("change", updatePrice));
-  updatePrice();
-}
-
-function initAddToCartAnim(){
+// Add-to-cart micro feedback (form posts to /cart/add; server uses default config).
+function initAddToCart() {
   const form = qs("#addForm");
   const btn = qs("#addToCartBtn");
+  if (!form || !btn) return;
   form.addEventListener("submit", () => {
-    // micro animation + update local count
     btn.textContent = "Added ✓";
-    btn.style.transform = "translateY(-1px) scale(1.01)";
-    bumpCartCount();
-    setTimeout(() => {
-      btn.textContent = "Add to cart";
-      btn.style.transform = "";
-    }, 900);
+    setTimeout(() => (btn.textContent = "Add to cart"), 900);
   });
 }
 
-function initWishlistSave(){
-  const saveBtn = qs("#saveWishlistBtn");
-  saveBtn.addEventListener("click", () => {
-    const frame = qs("#frame").value;
-    const size = qs("#size").value;
-    const poster_theme = qs("#poster_theme").value;
-
-    const item = {
-      id: `${window.__PRODUCT__.slug}|${frame}|${size}|${poster_theme}`,
-      slug: window.__PRODUCT__.slug,
-      frame, size, poster_theme,
-      created_at: Date.now()
-    };
-
+// Save to wishlist (no per-design config anymore — just the product).
+function initWishlistSave() {
+  const btn = qs("#saveWishlistBtn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const item = { id: window.__PRODUCT__.slug, slug: window.__PRODUCT__.slug, name: window.__PRODUCT__.name, created_at: Date.now() };
     const list = getWishlist();
-    if(!list.some(x => x.id === item.id)) list.unshift(item);
+    if (!list.some(x => x.id === item.id)) list.unshift(item);
     setWishlist(list);
-
-    saveBtn.textContent = "Saved ✓";
-    setTimeout(() => saveBtn.textContent = "Save design", 900);
+    btn.innerHTML = "Saved ✓";
+    setTimeout(() => (btn.innerHTML = '<span aria-hidden="true">♡</span> Save'), 1000);
   });
 }
 
-function initCopyLink(){
-  const btn = qs("#copyLinkBtn");
-  btn.addEventListener("click", async () => {
-    try{
-      await navigator.clipboard.writeText(window.location.href);
-      btn.textContent = "Copied ✓";
-      setTimeout(()=> btn.textContent="Copy link", 900);
-    }catch(e){
-      alert("Copy failed. You can manually copy the URL from the address bar.");
-    }
-  });
-}
-
-// C: 360 drag viewer
-function init360(){
+// 360° drag viewer (falls back to the poster when <4 frames exist).
+function init360() {
   const viewer = qs("#viewer360");
+  const img = qs("#viewerImg");
+  if (!viewer || !img) return;
   const frames = JSON.parse(viewer.dataset.frames || "[]");
   const fallback = viewer.dataset.fallback;
-  const img = qs("#viewerImg");
-  if(!img) return;
-
-  const frameList = (frames && frames.length >= 4) ? frames : [fallback, fallback, fallback, fallback];
-  let idx = 0;
-  let down = false;
-  let startX = 0;
-
-  function setFrame(i){
-    idx = (i + frameList.length) % frameList.length;
-    img.src = frameList[idx];
-  }
-
-  viewer.addEventListener("pointerdown", (e) => {
-    down = true;
-    startX = e.clientX;
-    viewer.setPointerCapture(e.pointerId);
-  });
-  viewer.addEventListener("pointerup", () => down = false);
-  viewer.addEventListener("pointercancel", () => down = false);
-  viewer.addEventListener("pointermove", (e) => {
-    if(!down) return;
+  const frameList = (frames && frames.length >= 4) ? frames : [fallback];
+  if (frameList.length < 2) return; // nothing to rotate
+  let idx = 0, down = false, startX = 0;
+  const setFrame = i => { idx = (i + frameList.length) % frameList.length; img.src = frameList[idx]; };
+  viewer.addEventListener("pointerdown", e => { down = true; startX = e.clientX; viewer.setPointerCapture(e.pointerId); });
+  viewer.addEventListener("pointerup", () => (down = false));
+  viewer.addEventListener("pointercancel", () => (down = false));
+  viewer.addEventListener("pointermove", e => {
+    if (!down) return;
     const dx = e.clientX - startX;
-    if(Math.abs(dx) > 14){
-      setFrame(idx + (dx > 0 ? 1 : -1));
-      startX = e.clientX;
-    }
+    if (Math.abs(dx) > 14) { setFrame(idx + (dx > 0 ? 1 : -1)); startX = e.clientX; }
   });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  initConfigurator();
-  initAddToCartAnim();
+  initAddToCart();
   initWishlistSave();
-  initCopyLink();
   init360();
 });

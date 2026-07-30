@@ -11,12 +11,12 @@ def client():
 
 
 @pytest.mark.parametrize(
-    "path", ["/", "/shop", "/product/mclaren-720s-orange", "/cart", "/checkout", "/about", "/contact"]
+    "path", ["/", "/shop", "/product/mclaren-p1-red", "/cart", "/checkout", "/about", "/contact"]
 )
 def test_pages_render(client, path):
     response = client.get(path)
     assert response.status_code == 200
-    assert b"Motorsport Gallery" in response.data
+    assert b"Framed Obsessions" in response.data
 
 
 def test_product_redirects_when_unknown(client):
@@ -29,7 +29,7 @@ def test_price_api_uses_server_product_price(client):
     response = client.post(
         "/api/price",
         json={
-            "slug": "mclaren-720s-orange",
+            "slug": "mclaren-p1-red",
             "frame": "walnut",
             "size": "A3",
             "poster_theme": "circuit",
@@ -37,7 +37,7 @@ def test_price_api_uses_server_product_price(client):
         },
     )
     assert response.status_code == 200
-    assert response.get_json() == {"price": 114.0}
+    assert response.get_json() == {"price": 124.0}
 
 
 def test_price_api_rejects_unknown_product(client):
@@ -64,7 +64,7 @@ def test_bundle_discount():
 
 
 def test_negative_cart_add_is_ignored(client):
-    client.post("/cart/add", data={"slug": "mclaren-720s-orange", "qty": "-2"})
+    client.post("/cart/add", data={"slug": "mclaren-p1-red", "qty": "-2"})
     with client.session_transaction() as session:
         assert session["cart"] == []
 

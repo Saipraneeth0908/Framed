@@ -8,10 +8,160 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_change_me")
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "products.json")
+
+# Frame categories that drive the theme switcher + poster filtering.
+# Colors live in CSS (html[data-theme="<key>"]); this only owns label/tagline/order.
+CATEGORIES = [
+    {"key": "hotwheels", "label": "Hot Wheels", "tagline": "Die-cast icons, framed for the wall."},
+    {"key": "cricket", "label": "Cricket", "tagline": "Legends of the pitch, in frame."},
+    {"key": "anime", "label": "Anime", "tagline": "Frame your fandom."},
+    {"key": "nature", "label": "Nature", "tagline": "The wild, on your wall."},
+    {"key": "motivation", "label": "Motivation", "tagline": "Fuel for every single day."},
+]
+
+# Per-category homepage content. Each category is its own landing (/?cat=<key>):
+# hero title/copy + "explore" collection cards + split-story, all category-specific.
+# Images are pulled from that category's products at render time.
+CATEGORY_CONTENT = {
+    "all": {
+        "eyebrow": "Every obsession, framed.",
+        "title": ("Frame what you're", "obsessed", "with."),
+        "subtitle": "Hot Wheels, cricket, anime, nature, motivation — pick a category up top to enter its world, then tune every frame before it reaches the wall.",
+        "collections_eyebrow": "Find your line",
+        "collections_title": "Explore by passion",
+        "collections": [
+            ("Hot Wheels", "Collector-grade die-cast."),
+            ("Cricket & Anime", "Legends and heroes, framed."),
+            ("Nature & Motivation", "Calm views and daily fuel."),
+        ],
+        "story": ("Any obsession.", "Made distinctly yours.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your piece", "Browse every collection in one place."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+    "hotwheels": {
+        "eyebrow": "Die-cast icons, framed for the wall.",
+        "title": ("Bring the", "starting grid", "to your walls."),
+        "subtitle": "Collector-grade automotive art — racetracks, blueprints, and die-cast icons, framed with technical precision.",
+        "collections_eyebrow": "Find your line",
+        "collections_title": "Explore the garage",
+        "collections": [
+            ("Supercars", "Low, fast, and unmistakable."),
+            ("Muscle", "Raw power in graphic form."),
+            ("Track Icons", "Motorsport stories worth framing."),
+        ],
+        "story": ("One car.", "Made distinctly yours.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your icon", "Browse the Hot Wheels collection."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+    "cricket": {
+        "eyebrow": "Legends of the pitch, in frame.",
+        "title": ("Frame the", "pitch", "legends."),
+        "subtitle": "Pitch geometry, seam detail, and match-day legends — framed with restrained, prestigious heritage.",
+        "collections_eyebrow": "Find your side",
+        "collections_title": "Explore the ground",
+        "collections": [
+            ("Batting Legends", "Icons at the crease."),
+            ("Iconic Moments", "Match-day history, framed."),
+            ("Team Colors", "Wear your side on the wall."),
+        ],
+        "story": ("One legend.", "Framed your way.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your legend", "Browse the Cricket collection."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+    "anime": {
+        "eyebrow": "Frame your fandom.",
+        "title": ("Frame your", "fandom", "in full energy."),
+        "subtitle": "Manga panels, speed lines, and cinematic heroes — framed with expressive, immersive energy.",
+        "collections_eyebrow": "Find your arc",
+        "collections_title": "Explore the multiverse",
+        "collections": [
+            ("Shonen Heroes", "Protagonists in full power."),
+            ("Villains & Arcs", "The dark side, framed."),
+            ("Key Visuals", "Poster-grade cover art."),
+        ],
+        "story": ("One hero.", "Framed your way.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your hero", "Browse the Anime collection."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+    "nature": {
+        "eyebrow": "The wild, on your wall.",
+        "title": ("Frame the", "wild", "in calm."),
+        "subtitle": "Topographic calm — landscapes, water, and light, framed as immersive, collectible art.",
+        "collections_eyebrow": "Find your view",
+        "collections_title": "Explore the wild",
+        "collections": [
+            ("Landscapes", "Mountains, water, and sky."),
+            ("Seasons", "Color that shifts with time."),
+            ("Stillness", "Calm you can hang."),
+        ],
+        "story": ("One landscape.", "Framed your way.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your view", "Browse the Nature collection."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+    "motivation": {
+        "eyebrow": "Fuel for every single day.",
+        "title": ("Frame your", "ambition", "with authority."),
+        "subtitle": "Discipline, ambition, and progress — framed with generous space and monumental type.",
+        "collections_eyebrow": "Find your drive",
+        "collections_title": "Explore the mindset",
+        "collections": [
+            ("Discipline", "Show up. Every day."),
+            ("Ambition", "Aim past the summit."),
+            ("Focus", "Silence the noise."),
+        ],
+        "story": ("One mantra.", "Framed your way.",
+                  "Choose a frame finish, select the scale, and tune the graphic treatment. The configurator keeps pricing transparent while you build."),
+        "steps": [
+            ("Pick your mantra", "Browse the Motivation collection."),
+            ("Tune the presentation", "Combine four frames, four sizes, and finishes."),
+            ("Preview your wall", "Upload a room photo and position the piece."),
+        ],
+    },
+}
+CATEGORY_KEYS = {c["key"] for c in CATEGORIES}
+# Fallback hero/story art for the "all" view (a car blueprint reads as the flagship).
+DEFAULT_HERO_IMAGE = "/static/img/posters/mclaren-p1-blueprint.png"
+DEFAULT_STORY_IMAGE = "/static/img/posters/mclaren-w1.png"
+
 VALID_FRAMES = {"black", "walnut", "white", "gold"}
 VALID_SIZES = {"A4", "A3", "12x18", "18x24"}
 VALID_THEMES = {"racing_stripes", "circuit", "minimal"}
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+COUNTRIES = ["United States", "Canada", "United Kingdom", "Australia", "India", "Germany", "France", "Other"]
+US_STATES = [
+    ("AL", "Alabama"), ("AK", "Alaska"), ("AZ", "Arizona"), ("AR", "Arkansas"), ("CA", "California"),
+    ("CO", "Colorado"), ("CT", "Connecticut"), ("DE", "Delaware"), ("DC", "District of Columbia"),
+    ("FL", "Florida"), ("GA", "Georgia"), ("HI", "Hawaii"), ("ID", "Idaho"), ("IL", "Illinois"),
+    ("IN", "Indiana"), ("IA", "Iowa"), ("KS", "Kansas"), ("KY", "Kentucky"), ("LA", "Louisiana"),
+    ("ME", "Maine"), ("MD", "Maryland"), ("MA", "Massachusetts"), ("MI", "Michigan"), ("MN", "Minnesota"),
+    ("MS", "Mississippi"), ("MO", "Missouri"), ("MT", "Montana"), ("NE", "Nebraska"), ("NV", "Nevada"),
+    ("NH", "New Hampshire"), ("NJ", "New Jersey"), ("NM", "New Mexico"), ("NY", "New York"),
+    ("NC", "North Carolina"), ("ND", "North Dakota"), ("OH", "Ohio"), ("OK", "Oklahoma"), ("OR", "Oregon"),
+    ("PA", "Pennsylvania"), ("RI", "Rhode Island"), ("SC", "South Carolina"), ("SD", "South Dakota"),
+    ("TN", "Tennessee"), ("TX", "Texas"), ("UT", "Utah"), ("VT", "Vermont"), ("VA", "Virginia"),
+    ("WA", "Washington"), ("WV", "West Virginia"), ("WI", "Wisconsin"), ("WY", "Wyoming"),
+]
 
 
 def load_products():
@@ -72,7 +222,7 @@ def parse_quantity(value, default=1, maximum=25):
 def inject_site_context():
     cart_items = session.get("cart", [])
     cart_count = sum(parse_quantity(item.get("qty", 0), default=0) for item in cart_items)
-    return {"cart_count": cart_count}
+    return {"cart_count": cart_count, "categories": CATEGORIES}
 
 
 def compute_config_price(base_price, frame, size, poster_theme):
@@ -121,24 +271,43 @@ def compute_cart_totals(cart_items):
 @app.route("/")
 def home():
     products = load_products()
-    featured = [p for p in products if p.get("featured")]
-    themes = {
-        "Performance": [
-            p for p in products if any(tag in p.get("tags", []) for tag in ("supercar", "hypercar", "sport"))
-        ],
-        "Track Icons": [p for p in products if any(tag in p.get("tags", []) for tag in ("race", "classic", "icon"))],
-        "Muscle": [p for p in products if "muscle" in p.get("tags", [])],
-    }
+    cat = request.args.get("cat", "all")
+    if cat not in CATEGORY_KEYS:
+        cat = "all"
+
+    scope = products if cat == "all" else [p for p in products if p.get("category") == cat]
+    featured = [p for p in scope if p.get("featured")] or scope
+    label = next((c["label"] for c in CATEGORIES if c["key"] == cat), "All frames")
+
+    # Hero + split-story artwork: prefer this category's own posters.
+    hero_product = featured[0] if featured else None
+    if cat == "all":
+        hero_image, story_image = DEFAULT_HERO_IMAGE, DEFAULT_STORY_IMAGE
+    else:
+        hero_image = hero_product["images"]["poster"] if hero_product else DEFAULT_HERO_IMAGE
+        story_image = (scope[-1] if scope else hero_product)["images"]["poster"] if scope else DEFAULT_STORY_IMAGE
+
+    content = CATEGORY_CONTENT[cat]
+    # "All Frames" hero gets a scrolling frame-wall background (built client-side from these).
+    marquee_images = (
+        [p["images"]["poster"] for p in products if p.get("images", {}).get("poster_available")]
+        if cat == "all"
+        else []
+    )
     return render_template(
         "home.html",
+        content=content,
         featured=featured,
-        products=products[:12],
-        themes=themes,
+        hero_product=hero_product,
+        hero_image=hero_image,
+        story_image=story_image,
+        marquee_images=marquee_images,
+        active_category=cat,
+        active_label=label,
+        design_count=len(scope),
         newsletter_status=request.args.get("newsletter"),
-        page_title="Motorsport Gallery | Framed automotive art",
-        page_description=(
-            "Discover customizable framed automotive posters, build a gallery set, and preview artwork on your wall."
-        ),
+        page_title=f"{label} | Framed Obsessions" if cat != "all" else "Framed Obsessions | Framed posters",
+        page_description=content["subtitle"],
     )
 
 
@@ -148,7 +317,7 @@ def shop():
     return render_template(
         "shop.html",
         products=products,
-        page_title="Shop Automotive Posters | Motorsport Gallery",
+        page_title="Shop Automotive Posters | Framed Obsessions",
         page_description="Browse customizable framed automotive posters by brand, color, style, and price.",
     )
 
@@ -180,7 +349,7 @@ def product(slug):
         config=config,
         unit_price=unit_price,
         related=related,
-        page_title=f"{p['name']} | Motorsport Gallery",
+        page_title=f"{p['name']} | Framed Obsessions",
         page_description=p["short_desc"],
     )
 
@@ -296,30 +465,40 @@ def cart_clear():
     return redirect(url_for("cart"))
 
 
+CHECKOUT_FIELDS = ("name", "email", "phone", "country", "street", "unit", "city", "state", "zip", "instructions", "default_addr")
+
+
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
     cart_init()
+    totals = compute_cart_totals(session["cart"])
     if request.method == "POST":
-        # Stripe later: for now, simulate order submit
-        name = request.form.get("name", "").strip()
-        email = request.form.get("email", "").strip()
-        address = request.form.get("address", "").strip()
+        data = {k: request.form.get(k, "").strip() for k in CHECKOUT_FIELDS}
+        required = ("name", "email", "street", "city", "state", "zip")
 
-        if not name or not email or not address:
-            return render_template("checkout.html", error="Please fill all required fields.", form_data=request.form)
-        if not EMAIL_PATTERN.match(email):
-            return render_template("checkout.html", error="Enter a valid email address.", form_data=request.form)
+        def back(message):
+            return render_template(
+                "checkout.html", error=message, form_data=data, totals=totals,
+                states=US_STATES, countries=COUNTRIES, page_title="Checkout | Framed Obsessions",
+            )
+
+        if any(not data[k] for k in required):
+            return back("Please fill in all required fields.")
+        if not EMAIL_PATTERN.match(data["email"]):
+            return back("Enter a valid email address.")
         if not session["cart"]:
-            return render_template("checkout.html", error="Your cart is empty.", form_data=request.form)
+            return back("Your cart is empty. Add a poster before checking out.")
 
-        # In a real app you would create an order + payment intent
+        # Stripe later: for now, simulate order submit. A real app would persist
+        # this structured address on the order and create a PaymentIntent.
         session["cart"] = []
         session.modified = True
-        return render_template("checkout.html", success=True)
+        return render_template("checkout.html", success=True, shipped_to=data, page_title="Checkout | Framed Obsessions")
 
-    # GET
-    totals = compute_cart_totals(session["cart"])
-    return render_template("checkout.html", totals=totals, page_title="Checkout | Motorsport Gallery")
+    return render_template(
+        "checkout.html", totals=totals, form_data={}, states=US_STATES, countries=COUNTRIES,
+        page_title="Checkout | Framed Obsessions",
+    )
 
 
 @app.route("/newsletter", methods=["POST"])
