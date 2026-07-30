@@ -18,3 +18,5 @@ build/
 *.egg-info/
 .vscode/
 .idea/
+server.stdout.log
+server.stderr.log

@@ -1,186 +1,130 @@
 {% extends "base.html" %}
 {% from "macros/cards.html" import product_card %}
 {% block content %}
-<section class="section">
-  <div class="container product">
-    <div class="product__left">
-      <!-- Main poster preview -->
+{% set rcount = product.reviews|length %}
+{% set ravg = ((product.reviews|sum(attribute='rating') / rcount)|round(1)) if rcount else 0 %}
+
+<!-- 1 · Product details -->
+<section class="section product-hero">
+  <div class="container product-lead">
+    <div class="product-lead__media reveal">
       <div class="posterFrame" id="posterFrame">
-        {% if product.images.poster_available %}<img id="posterImg" src="{{ product.images.poster }}" alt="{{ product.name }} poster preview" decoding="async" onerror="this.style.display='none'"/>{% endif %}
-        <div class="posterFallback" id="posterFallback">
-          <div class="fallbackTitle">{{ product.brand }}</div>
-          <div class="fallbackName">{{ product.name }}</div>
-          <div class="muted small">Add images in static/img/posters to display.</div>
-        </div>
-      </div>
-
-      <!-- 360 view -->
-      <div class="panel" {% if product.images.available_frames|length < 4 %}data-fallback-viewer{% endif %}>
-        <div class="panel__head">
-          <div class="panel__title">{% if product.images.available_frames|length >= 4 %}360° view (drag){% else %}Detail view{% endif %}</div>
-          <div class="muted small">{% if product.images.available_frames|length >= 4 %}Drag horizontally to rotate{% else %}360° media is not available for this design yet{% endif %}</div>
-        </div>
-        <div class="viewer360" id="viewer360"
-             data-frames='{{ product.images.available_frames | tojson }}'
-             data-fallback='{{ product.images.poster }}'>
-          {% if product.images.poster_available %}<img id="viewerImg" src="{{ product.images.poster }}" alt="Poster detail view"/>{% else %}<div class="image-fallback"><span>{{ product.brand }}</span><strong>{{ product.slug.split('-')[0]|upper }}</strong></div>{% endif %}
-          <div class="viewerHint">Drag left/right</div>
-        </div>
-      </div>
-
-      <!-- Reviews + customer photos -->
-      <div class="panel">
-        <div class="panel__head">
-          <div class="panel__title">Reviews</div>
-          <div class="muted small">{{ product.reviews|length }} reviews</div>
-        </div>
-        <div class="reviews">
-          {% if product.reviews|length == 0 %}
-            <div class="muted">No reviews yet. Be the first.</div>
-          {% else %}
-            {% for r in product.reviews %}
-              <div class="review">
-                <div class="review__top">
-                  <div class="review__name">{{ r.name }}</div>
-                  <div class="review__stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</div>
-                </div>
-                <div class="muted">{{ r.text }}</div>
-              </div>
-            {% endfor %}
-          {% endif %}
-        </div>
-
-        <div class="gallery">
-          {% for img in product.available_customer_photos %}
-            <div class="thumb" style="background-image:url('{{ img }}')"></div>
-          {% endfor %}
-          {% if product.available_customer_photos|length == 0 %}
-            <div class="muted small">Customer photos will appear here.</div>
-          {% endif %}
-        </div>
+        {% if product.images.poster_available %}<img id="posterImg" src="{{ product.images.poster }}" alt="{{ product.name }} framed poster" decoding="async" onerror="this.style.display='none'"/>{% endif %}
+        <div class="posterFallback" id="posterFallback"><div class="fallbackTitle">{{ product.brand }}</div><div class="fallbackName">{{ product.name }}</div></div>
       </div>
     </div>
 
-    <div class="product__right">
+    <div class="product-lead__info reveal">
       <div class="eyebrow">{{ product.series }} · {{ product.brand }}</div>
       <h1 class="product-title">{{ product.name }}</h1>
-      <div class="muted">{{ product.short_desc }}</div>
+      <p class="product-lead__desc">{{ product.short_desc }}</p>
 
-      <div class="priceRow">
-        <div class="priceNow">$<span id="priceNow">{{ unit_price }}</span></div>
-        <div class="muted small">Base: ${{ product.base_price }}</div>
+      <div class="product-rating">
+        {% if rcount %}<span class="stars" aria-hidden="true">{{ '★' * (ravg|round(0,'common')|int) }}{{ '☆' * (5 - (ravg|round(0,'common')|int)) }}</span><span class="muted small">{{ ravg }} · <a href="#reviews">{{ rcount }} review{{ 's' if rcount != 1 }}</a></span>{% else %}<span class="muted small">No reviews yet</span>{% endif %}
       </div>
 
-      <!-- Configurator (A) -->
-      <div class="panel">
-        <div class="panel__head">
-          <div class="panel__title">Customize</div>
-          <div class="muted small">Frame • Size • Poster theme</div>
-        </div>
+      <div class="product-price"><strong>${{ product.base_price }}</strong><span class="muted small">Framed &amp; ready to hang · free hanging kit</span></div>
 
-        <form method="POST" action="/cart/add" id="addForm" aria-describedby="priceStatus">
-          <input type="hidden" name="slug" value="{{ product.slug }}"/>
-          <input type="hidden" name="qty" value="1"/>
+      <form method="POST" action="{{ url_for('cart_add') }}" id="addForm" class="product-cta">
+        <input type="hidden" name="slug" value="{{ product.slug }}">
+        <input type="hidden" name="qty" value="1">
+        <button class="button button--primary" id="addToCartBtn" type="submit">Add to cart</button>
+        <button class="button button--secondary" id="saveWishlistBtn" type="button"><span aria-hidden="true">♡</span> Save</button>
+      </form>
 
-          <div class="field">
-            <label for="frame">Frame</label>
-            <select class="select" name="frame" id="frame">
-              <option value="black" {% if config.frame == "black" %}selected{% endif %}>Black (default)</option>
-              <option value="walnut" {% if config.frame == "walnut" %}selected{% endif %}>Walnut (+$15)</option>
-              <option value="white" {% if config.frame == "white" %}selected{% endif %}>White (+$10)</option>
-              <option value="gold" {% if config.frame == "gold" %}selected{% endif %}>Matte Gold (+$20)</option>
-            </select>
-          </div>
+      <ul class="product-highlights">
+        <li><strong>Frame</strong><span>Engineered wood, matte 20&nbsp;mm profile</span></li>
+        <li><strong>Print</strong><span>Giclée on 250&nbsp;gsm archival matte</span></li>
+        <li><strong>Glazing</strong><span>Shatter-resistant acrylic</span></li>
+        <li><strong>Ships</strong><span>Ready to hang · 3–5 business days</span></li>
+      </ul>
+    </div>
+  </div>
 
-          <div class="field">
-            <label for="size">Size</label>
-            <select class="select" name="size" id="size">
-              <option value="A4" {% if config.size == "A4" %}selected{% endif %}>A4</option>
-              <option value="A3" {% if config.size == "A3" %}selected{% endif %}>A3 (+$12)</option>
-              <option value="12x18" {% if config.size == "12x18" %}selected{% endif %}>12x18 (+$18)</option>
-              <option value="18x24" {% if config.size == "18x24" %}selected{% endif %}>18x24 (+$28)</option>
-            </select>
-          </div>
+  <!-- Specifications -->
+  <div class="container">
+    <div class="panel spec-panel reveal">
+      <div class="panel__head"><div class="panel__title">Specifications</div><div class="muted small">Framed print · {{ active_label if active_label else product.category|capitalize }}</div></div>
+      <dl class="spec-table">
+        <div><dt>Frame material</dt><dd>Engineered wood, matte finish</dd></div>
+        <div><dt>Frame profile</dt><dd>20&nbsp;mm deep moulding</dd></div>
+        <div><dt>Available sizes</dt><dd>A4 (210×297&nbsp;mm) · A3 (297×420&nbsp;mm) · 12×18&nbsp;in · 18×24&nbsp;in</dd></div>
+        <div><dt>Print</dt><dd>Giclée, 250&nbsp;gsm archival matte paper</dd></div>
+        <div><dt>Glazing</dt><dd>Shatter-resistant acrylic (lightweight, safe)</dd></div>
+        <div><dt>Orientation</dt><dd>Portrait</dd></div>
+        <div><dt>Mounting</dt><dd>Sawtooth hanger + wall hooks included</dd></div>
+        <div><dt>Approx. weight (A3)</dt><dd>1.2&nbsp;kg framed</dd></div>
+        {% if product.category == 'hotwheels' %}<div><dt>Display pairing</dt><dd>Scaled to sit above a 1:64 die-cast shelf display</dd></div>{% endif %}
+        <div><dt>Collection</dt><dd>{{ product.series }}</dd></div>
+      </dl>
+    </div>
+  </div>
 
-          <div class="field">
-            <label for="poster_theme">Poster Theme</label>
-            <select class="select" name="poster_theme" id="poster_theme">
-              <option value="racing_stripes" {% if config.poster_theme == "racing_stripes" %}selected{% endif %}>Racing Stripes</option>
-              <option value="circuit" {% if config.poster_theme == "circuit" %}selected{% endif %}>Circuit (+$8)</option>
-              <option value="minimal" {% if config.poster_theme == "minimal" %}selected{% endif %}>Minimal</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <button type="submit" class="btn btn--primary" id="addToCartBtn">Add to cart</button>
-            <button type="button" class="btn btn--ghost" id="saveWishlistBtn">Save design</button>
-          </div>
-
-          <div class="muted small">
-            Build a Set: add 3+ posters to cart to unlock bundle discount.
-          </div>
-          <div class="muted small" id="priceStatus" role="status" aria-live="polite"></div>
-        </form>
+  <!-- 360 / detail view -->
+  <div class="container">
+    <div class="panel reveal" {% if product.images.available_frames|length < 4 %}data-fallback-viewer{% endif %}>
+      <div class="panel__head"><div class="panel__title">{% if product.images.available_frames|length >= 4 %}360° view{% else %}Detail view{% endif %}</div><div class="muted small">{% if product.images.available_frames|length >= 4 %}Drag horizontally to rotate{% else %}360° media not available for this design yet{% endif %}</div></div>
+      <div class="viewer360" id="viewer360" data-frames='{{ product.images.available_frames | tojson }}' data-fallback='{{ product.images.poster }}'>
+        {% if product.images.poster_available %}<img id="viewerImg" src="{{ product.images.poster }}" alt="{{ product.name }} detail view"/>{% else %}<div class="image-fallback"><span>{{ product.brand }}</span><strong>{{ product.slug.split('-')[0]|upper }}</strong></div>{% endif %}
+        <div class="viewerHint">Drag left / right</div>
       </div>
-
-      <!-- B) Wall preview -->
-      <div class="panel">
-        <div class="panel__head">
-          <div class="panel__title">Wall preview</div>
-          <div class="muted small">Upload a wall photo, drag/resize poster</div>
-        </div>
-
-        <div class="row">
-          <label class="sr-only" for="wallFile">Upload a room photo</label>
-          <input type="file" id="wallFile" class="input" accept="image/*"/>
-          <button class="btn btn--ghost" id="resetWallBtn" type="button">Reset</button>
-        </div>
-
-        <div class="wallWrap">
-          <canvas id="wallCanvas" width="900" height="600"></canvas>
-        </div>
-      </div>
-
-      <!-- Specs -->
-      <div class="panel">
-        <div class="panel__head">
-          <div class="panel__title">Specs</div>
-          <div class="muted small">Displayed in poster style</div>
-        </div>
-        <div class="specGrid">
-          <div><div class="muted small">POWER</div><div class="specVal">{{ product.specs.power_hp }} HP</div></div>
-          <div><div class="muted small">TORQUE</div><div class="specVal">{% if product.specs.torque_lbft != 0 %}{{ product.specs.torque_lbft }} LB-FT{% else %}—{% endif %}</div></div>
-          <div><div class="muted small">0–100</div><div class="specVal">{{ product.specs.zero_to_100 }}</div></div>
-          <div><div class="muted small">TOP SPEED</div><div class="specVal">{{ product.specs.top_speed }}</div></div>
-          <div><div class="muted small">YEAR</div><div class="specVal">{{ product.specs.year }}</div></div>
-        </div>
-      </div>
-
-      <div class="panel subtle">
-        <div class="muted small">
-          Share this exact configuration:
-          <button class="linkbtn" id="copyLinkBtn" type="button">Copy link</button>
-        </div>
-      </div>
-
     </div>
   </div>
 </section>
+
+<!-- 2 · Detailed description -->
+<section class="section section--light">
+  <div class="container narrow-copy reveal">
+    <span class="eyebrow">About this piece</span>
+    <h2>Gallery-grade, ready to hang.</h2>
+    <p>The {{ product.name }} is a museum-grade framed print built to anchor a wall. The artwork is reproduced with archival giclée inks on 250&nbsp;gsm matte paper, then set behind shatter-resistant acrylic in a slim engineered-wood frame with a hand-finished matte profile — deep enough to read as a real gallery piece, light enough to hang anywhere.</p>
+    {% if product.specs %}<p>This design celebrates the {{ product.name.split(' Poster')[0] }} — {{ product.specs.power_hp }}&nbsp;hp, {{ product.specs.top_speed }}, {{ product.specs.year }}. Clean technical typography and telemetry-inspired detailing keep the focus on the machine.</p>{% else %}<p>Every detail is composed for display: balanced negative space, restrained accents from the {{ product.category|capitalize }} palette, and print-safe contrast so it holds up under any light.</p>{% endif %}
+    <p>Each order arrives ready to hang with a sawtooth hanger and wall hooks in the box. Combine any three or more posters in your cart to unlock a 10% set discount and build a connected wall.</p>
+  </div>
+</section>
+
+<!-- 3 · Wall preview -->
+<section class="section product-wall">
+  <div class="container">
+    <div class="section-heading reveal"><div><span class="eyebrow">See it on your wall</span><h2>Wall preview</h2></div><p>Upload a room photo, then drag and resize the poster to plan the placement. Your photo stays in your browser.</p></div>
+    <div class="panel reveal">
+      <div class="row wall-controls">
+        <label class="sr-only" for="wallFile">Upload a room photo</label>
+        <input type="file" id="wallFile" class="input" accept="image/*"/>
+        <button class="button button--secondary" id="resetWallBtn" type="button">Reset</button>
+      </div>
+      <div class="wallWrap"><canvas id="wallCanvas" width="900" height="600"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Reviews -->
+<section class="section section--light" id="reviews">
+  <div class="container">
+    <div class="section-heading reveal"><div><span class="eyebrow">What buyers say</span><h2>Reviews</h2></div><p>{{ rcount }} review{{ 's' if rcount != 1 }}{% if rcount %} · {{ ravg }} / 5 average{% endif %}.</p></div>
+    <div class="panel reveal">
+      <div class="reviews">
+        {% if rcount == 0 %}<div class="muted">No reviews yet. Be the first.</div>{% else %}{% for r in product.reviews %}<div class="review"><div class="review__top"><div class="review__name">{{ r.name }}</div><div class="review__stars">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</div></div><div class="muted">{{ r.text }}</div></div>{% endfor %}{% endif %}
+      </div>
+      <div class="gallery">
+        {% for img in product.available_customer_photos %}<div class="thumb" style="background-image:url('{{ img }}')"></div>{% endfor %}
+        {% if product.available_customer_photos|length == 0 %}<div class="muted small">Customer photos will appear here.</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · More products -->
 {% if related %}
 <section class="section section--dark">
-  <div class="container"><div class="section-heading section-heading--inverse"><div><span class="eyebrow">Keep exploring</span><h2>More from the grid</h2></div><a class="text-link" href="{{ url_for('shop') }}">Shop all posters →</a></div><div class="product-grid">{% for p in related %}{{ product_card(p) }}{% endfor %}</div></div>
+  <div class="container"><div class="section-heading section-heading--inverse reveal"><div><span class="eyebrow">Keep exploring</span><h2>More from the grid</h2></div><a class="text-link" href="{{ url_for('shop') }}">Shop all posters →</a></div><div class="product-grid">{% for p in related %}{{ product_card(p) }}{% endfor %}</div></div>
 </section>
 {% endif %}
 
-<script>
-  window.__PRODUCT__ = {
-    slug: "{{ product.slug }}",
-    poster: "{{ product.images.poster }}"
-  };
-</script>
+<script>window.__PRODUCT__ = { slug: "{{ product.slug }}", name: "{{ product.name|e }}", poster: "{{ product.images.poster }}" };</script>
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/product.js"></script>
-<script src="/static/js/wall_preview.js"></script>
+<script src="{{ url_for('static', filename='js/product.js', v='20260727-framed3') }}"></script>
+<script src="{{ url_for('static', filename='js/wall_preview.js', v='20260723-redesign') }}"></script>
 {% endblock %}

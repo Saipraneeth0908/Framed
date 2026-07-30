@@ -2,7 +2,7 @@
 <article class="product-card" data-brand="{{ product.brand }}" data-color="{{ product.color }}"
          data-price="{{ product.base_price }}" data-featured="{{ '1' if product.featured else '0' }}"
          data-name="{{ product.name|lower }}" data-tags="{{ (product.tags|join(' '))|lower }}"
-         data-series="{{ product.series|lower }}">
+         data-series="{{ product.series|lower }}" data-category="{{ product.category|default('') }}">
   <a class="product-card__link" href="{{ url_for('product', slug=product.slug) }}" aria-label="View {{ product.name }}">
     <div class="product-card__media">
       {% if product.images.poster_available %}<img src="{{ product.images.poster }}" alt="{{ product.name }} artwork"
@@ -18,7 +18,7 @@
       <div class="eyebrow">{{ product.brand }} · {{ product.color }}</div>
       <h3>{{ product.name }}</h3>
       <p>{{ product.short_desc }}</p>
-      <div class="product-card__footer"><span>Customize</span><strong>From ${{ product.base_price }}</strong></div>
+      <div class="product-card__footer"><span>View</span><strong>From ${{ product.base_price }}</strong></div>
     </div>
   </a>
 </article>

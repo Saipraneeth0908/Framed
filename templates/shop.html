@@ -6,7 +6,7 @@
 </section>
 <section class="section catalog-section">
   <div class="container">
-    <div class="catalog-heading"><div><span class="eyebrow">Motorsport Gallery / 12 designs</span><h2>All posters</h2></div><p id="resultCount" role="status" aria-live="polite">Showing {{ products|length }} products</p></div>
+    <div class="catalog-heading"><div><span class="eyebrow">Framed Obsessions / {{ products|length }} designs</span><h2>All posters</h2></div><p id="resultCount" role="status" aria-live="polite">Showing {{ products|length }} products</p></div>
     <div class="shopbar" id="catalog-controls" aria-label="Catalog controls">
       <div class="field search-field"><label for="q">Search</label><input id="q" class="input" type="search" placeholder="Brand, model, or style"></div>
       <div class="field"><label for="brand">Brand</label><select id="brand" class="select"><option value="">All brands</option></select></div>
@@ -20,4 +20,4 @@
   </div>
 </section>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/shop.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/shop.js', v='20260723-redesign') }}"></script>{% endblock %}

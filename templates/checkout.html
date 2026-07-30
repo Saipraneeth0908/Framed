@@ -2,57 +2,105 @@
 {% block content %}
 <section class="section">
   <div class="container">
-    <div class="section__head">
-      <h2>Checkout</h2>
-      <div class="muted">Stripe integration is planned later. This is a placeholder checkout flow.</div>
-    </div>
+    <div class="section-heading"><div><span class="eyebrow">Almost there</span><h2>Checkout</h2></div><p>Stripe payment is planned later — this is a demo shipping flow, no payment is captured.</p></div>
 
     {% if success %}
-      <div class="panel">
-        <h3>Order submitted</h3>
-        <div class="muted">Thanks! Your order has been placed (no payment captured in this demo).</div>
-        <a class="btn btn--primary" href="/shop">Back to Shop</a>
+      <div class="panel confirm-panel">
+        <span class="eyebrow">Order submitted</span>
+        <h3>Thanks{% if shipped_to and shipped_to.name %}, {{ shipped_to.name.split(' ')[0] }}{% endif %}!</h3>
+        <p class="muted">Your order has been placed (no payment captured in this demo).{% if shipped_to and shipped_to.street %} We’ll ship to:{% endif %}</p>
+        {% if shipped_to and shipped_to.street %}
+        <address class="ship-to">{{ shipped_to.name }}<br>{{ shipped_to.street }}{% if shipped_to.unit %}, {{ shipped_to.unit }}{% endif %}<br>{{ shipped_to.city }}, {{ shipped_to.state }} {{ shipped_to.zip }}<br>{{ shipped_to.country or 'United States' }}</address>
+        {% endif %}
+        <a class="button button--primary" href="{{ url_for('shop') }}">Continue shopping</a>
       </div>
     {% else %}
-      {% if error %}
-        <div class="panel error">{{ error }}</div>
-      {% endif %}
+      {% if error %}<div class="panel error form-error" role="alert">{{ error }}</div>{% endif %}
 
       <div class="checkoutGrid">
-        <form class="panel" method="POST">
-          <div class="field">
-            <label for="checkout-name">Name*</label>
-            <input class="input" id="checkout-name" name="name" autocomplete="name" required value="{{ form_data.name if form_data else '' }}" placeholder="Full name"/>
-          </div>
-          <div class="field">
-            <label for="checkout-email">Email*</label>
-            <input class="input" id="checkout-email" name="email" type="email" autocomplete="email" required value="{{ form_data.email if form_data else '' }}" placeholder="you@example.com"/>
-          </div>
-          <div class="field">
-            <label for="checkout-address">Shipping Address*</label>
-            <textarea class="input" id="checkout-address" name="address" rows="4" autocomplete="street-address" required placeholder="Street, City, State, ZIP">{{ form_data.address if form_data else '' }}</textarea>
-          </div>
+        <form class="panel address-form" method="POST" novalidate>
+          <div class="address-form__head"><h3>Add a shipping address</h3><p class="muted small">Fields marked * are required.</p></div>
 
-          <button class="btn btn--primary" type="submit">Place order</button>
-          <div class="muted small">Payment via Stripe will be added later.</div>
-        </form>
-
-        <div class="panel">
-          <div class="panel__head">
-            <div class="panel__title">Summary</div>
-          </div>
-          <div class="muted small">
-            Add items in cart, then checkout. Bundle discount applies in cart.
-          </div>
-          <a class="btn btn--ghost" href="/cart">View cart</a>
-
-          <div class="panel subtle">
-            <div class="panel__title">Stripe Later</div>
-            <div class="muted small">
-              Next step: create a Stripe PaymentIntent and redirect to Stripe checkout.
+          <div class="field-row field-row--2">
+            <div class="field">
+              <label for="co-name">Full name*</label>
+              <input class="input" id="co-name" name="name" autocomplete="name" required value="{{ form_data.get('name','') }}" placeholder="First and last name">
+            </div>
+            <div class="field">
+              <label for="co-email">Email*</label>
+              <input class="input" id="co-email" name="email" type="email" autocomplete="email" required value="{{ form_data.get('email','') }}" placeholder="you@example.com">
             </div>
           </div>
-        </div>
+
+          <div class="field-row field-row--2">
+            <div class="field">
+              <label for="co-country">Country / Region*</label>
+              <select class="select" id="co-country" name="country" autocomplete="country-name">
+                {% for c in countries %}<option value="{{ c }}" {% if form_data.get('country', 'United States') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="co-phone">Phone number</label>
+              <input class="input" id="co-phone" name="phone" type="tel" autocomplete="tel" value="{{ form_data.get('phone','') }}" placeholder="(555) 555-5555">
+              <p class="field-hint">May be used to assist delivery.</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="co-street">Street address*</label>
+            <input class="input" id="co-street" name="street" autocomplete="address-line1" required value="{{ form_data.get('street','') }}" placeholder="Street address or P.O. Box">
+          </div>
+
+          <div class="field">
+            <label for="co-unit">Unit or suite number</label>
+            <input class="input" id="co-unit" name="unit" autocomplete="address-line2" value="{{ form_data.get('unit','') }}" placeholder="Apt, suite, unit, building, floor, etc.">
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="co-city">City*</label>
+              <input class="input" id="co-city" name="city" autocomplete="address-level2" required value="{{ form_data.get('city','') }}" placeholder="City">
+            </div>
+            <div class="field">
+              <label for="co-state">State*</label>
+              <select class="select" id="co-state" name="state" autocomplete="address-level1" required>
+                <option value="" {% if not form_data.get('state') %}selected{% endif %} disabled>Select</option>
+                {% for abbr, full in states %}<option value="{{ abbr }}" {% if form_data.get('state') == abbr %}selected{% endif %}>{{ full }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="co-zip">ZIP code*</label>
+              <input class="input" id="co-zip" name="zip" autocomplete="postal-code" inputmode="numeric" required value="{{ form_data.get('zip','') }}" placeholder="ZIP">
+            </div>
+          </div>
+
+          <div class="field-check">
+            <input type="checkbox" id="co-default" name="default_addr" {% if form_data.get('default_addr') %}checked{% endif %}>
+            <label for="co-default">Make this my default address</label>
+          </div>
+
+          <div class="field">
+            <label for="co-instructions">Delivery instructions (optional)</label>
+            <textarea class="input" id="co-instructions" name="instructions" rows="2" placeholder="Access codes, drop-off notes, gate info…">{{ form_data.get('instructions','') }}</textarea>
+          </div>
+
+          <button class="button button--primary button--block" type="submit">Place order</button>
+          <p class="muted small" style="margin-top:.75rem">Payment via Stripe will be added later. No card is charged.</p>
+        </form>
+
+        <aside class="panel order-summary">
+          <div class="panel__head"><div class="panel__title">Order summary</div></div>
+          {% if totals and totals.total_qty %}
+          <div class="sum-line"><span>Items ({{ totals.total_qty }})</span><strong>${{ '%.2f'|format(totals.subtotal) }}</strong></div>
+          {% if totals.bundle_discount %}<div class="sum-line sum-line--save"><span>Set discount</span><strong>−${{ '%.2f'|format(totals.bundle_discount) }}</strong></div>{% endif %}
+          <div class="sum-line"><span>Shipping</span><strong>Calculated later</strong></div>
+          <div class="sum-line sum-line--total"><span>Total</span><strong>${{ '%.2f'|format(totals.total) }}</strong></div>
+          {% else %}
+          <p class="muted small">Your cart is empty. Add a poster, then return to checkout.</p>
+          {% endif %}
+          <a class="button button--secondary button--block" href="{{ url_for('cart') }}">View cart</a>
+          <div class="panel subtle" style="margin-top:1rem"><div class="panel__title">Secure checkout</div><div class="muted small">Stripe payment (PaymentIntent + redirect) is the next step. This demo does not store cards.</div></div>
+        </aside>
       </div>
     {% endif %}
   </div>

@@ -4,6 +4,8 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+# ponytail: copy strings in main.py run long; drop this and reflow them if 120 must hold
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

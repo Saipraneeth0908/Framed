@@ -22,7 +22,8 @@
       const haystack = `${card.dataset.name} ${card.dataset.tags} ${card.dataset.series} ${card.dataset.brand}`.toLowerCase();
       card.hidden = !((!query || haystack.includes(query)) && (!brand || card.dataset.brand === brand) && (!color || card.dataset.color === color));
     });
-    const visible = cards.filter(card => !card.hidden);
+    // Category (theme switcher) hides via .cat-hidden — exclude those from counts too.
+    const visible = cards.filter(card => !card.hidden && !card.classList.contains("cat-hidden"));
     visible.sort((a, b) => {
       const pa = Number(a.dataset.price), pb = Number(b.dataset.price);
       if (sort === "price_asc") return pa - pb;
@@ -46,5 +47,6 @@
     if (params.get("focus") === "featured") get("#sort").value = "featured";
     controls.forEach(id => get(`#${id}`).addEventListener(id === "q" ? "input" : "change", applyFilters));
     get("#clear").addEventListener("click", clearFilters); get("[data-clear-filters]").addEventListener("click", clearFilters); applyFilters();
+    document.addEventListener("fo:category", applyFilters);
   });
 })();
