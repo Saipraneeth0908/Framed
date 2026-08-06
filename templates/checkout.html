@@ -19,6 +19,7 @@
 
       <div class="checkoutGrid">
         <form class="panel address-form" method="POST" novalidate>
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"/>
           <div class="address-form__head"><h3>Add a shipping address</h3><p class="muted small">Fields marked * are required.</p></div>
 
           <div class="field-row field-row--2">

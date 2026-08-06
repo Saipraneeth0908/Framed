@@ -10,7 +10,7 @@
   <meta property="og:description" content="{{ page_description|default('Customizable framed posters across Hot Wheels, cricket, anime, nature, and motivation themes.') }}">
   <meta property="og:type" content="website">
   <link rel="icon" href="{{ url_for('static', filename='img/logo-favicon.png') }}" type="image/png">
-  <script>(function(){var r=document.documentElement;var u=new URLSearchParams(location.search).get('cat');var c=u||localStorage.getItem('fo-category')||'all';if(u)localStorage.setItem('fo-category',u);if(c!=='all')r.setAttribute('data-theme',c);r.setAttribute('data-cat',c);})();</script>
+  <script nonce="{{ csp_nonce() }}">(function(){var r=document.documentElement;var u=new URLSearchParams(location.search).get('cat');var c=u||localStorage.getItem('fo-category')||'all';if(u)localStorage.setItem('fo-category',u);if(c!=='all')r.setAttribute('data-theme',c);r.setAttribute('data-cat',c);})();</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='20260727-framed4') }}">
 </head>
 <body data-page="{{ request.endpoint }}">

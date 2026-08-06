@@ -1,0 +1,161 @@
+name: framedobsessions
+
+# Tier 1 topology (see docs/ARCHITECTURE.md §"Cost & topology").
+# One Postgres cluster, one Redis, four app processes, BI + monitoring alongside.
+# Ports are offset (5433/6380) so a local Postgres/Redis install does not collide.
+
+x-app-env: &app-env
+  DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@postgres:5432/framedobsessions?sslmode=disable}
+  STORE_DATABASE_URL: ${STORE_DATABASE_URL:-postgres://store_app:store_app_dev@postgres:5432/framedobsessions?sslmode=disable}
+  ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:-postgres://admin_app:admin_app_dev@postgres:5432/framedobsessions?sslmode=disable}
+  INGEST_DATABASE_URL: ${INGEST_DATABASE_URL:-postgres://ingest:ingest_dev@postgres:5432/framedobsessions?sslmode=disable}
+  ETL_DATABASE_URL: ${ETL_DATABASE_URL:-postgres://etl:etl_dev@postgres:5432/framedobsessions?sslmode=disable}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: framedobsessions
+    ports: ["5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d framedobsessions"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    # appendonly: the event stream is the durability boundary for ingestion.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6380:6379"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: `docker compose run --rm dbmate up`
+  dbmate:
+    image: ghcr.io/amacneil/dbmate:2
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/framedobsessions?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: /db/migrations
+      DBMATE_SCHEMA_FILE: /db/schema.sql
+      DBMATE_NO_DUMP_SCHEMA: "true"
+    volumes:
+      - ../db:/db
+    depends_on:
+      postgres: {condition: service_healthy}
+    profiles: ["tools"]
+
+  web:
+    build: {context: .., dockerfile: deploy/Dockerfile, target: app}
+    command: ["gunicorn", "-b", "0.0.0.0:8000", "-w", "3", "web.app:app"]
+    environment:
+      <<: *app-env
+      FLASK_SECRET_KEY: ${WEB_SECRET_KEY:?set WEB_SECRET_KEY}
+      COLLECTOR_URL: ${COLLECTOR_URL:-http://localhost:8002/e}
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  admin:
+    build: {context: .., dockerfile: deploy/Dockerfile, target: app}
+    command: ["gunicorn", "-b", "0.0.0.0:8001", "-w", "2", "admin.app:app"]
+    environment:
+      <<: *app-env
+      ADMIN_SECRET_KEY: ${ADMIN_SECRET_KEY:?set ADMIN_SECRET_KEY}
+      ADMIN_COOKIE_DOMAIN: ${ADMIN_COOKIE_DOMAIN:-}
+      METABASE_SITE_URL: ${METABASE_SITE_URL:-http://localhost:3000}
+      METABASE_EMBED_SECRET: ${METABASE_EMBED_SECRET:-}
+    ports: ["8001:8001"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  collector:
+    build: {context: .., dockerfile: deploy/Dockerfile, target: app}
+    command: ["gunicorn", "-b", "0.0.0.0:8002", "-w", "2", "collector.app:app"]
+    environment:
+      <<: *app-env
+      EVENT_SALT_SEED: ${EVENT_SALT_SEED:?set EVENT_SALT_SEED}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8000}
+    ports: ["8002:8002"]
+    depends_on:
+      redis: {condition: service_healthy}
+
+  worker:
+    build: {context: .., dockerfile: deploy/Dockerfile, target: app}
+    command: ["python", "-m", "worker.main"]
+    environment:
+      <<: *app-env
+      METRICS_PORT: "9101"
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  metabase:
+    image: metabase/metabase:latest
+    ports: ["3000:3000"]
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: "5432"
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: postgres
+      MB_DB_PASS: postgres
+      MB_EMBEDDING_SECRET_KEY: ${METABASE_EMBED_SECRET:-}
+    depends_on:
+      postgres: {condition: service_healthy}
+    profiles: ["bi"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes: ["./prometheus:/etc/prometheus"]
+    ports: ["9090:9090"]
+    profiles: ["monitoring"]
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    volumes: ["./alertmanager:/etc/alertmanager"]
+    ports: ["9093:9093"]
+    profiles: ["monitoring"]
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes: ["grafana:/var/lib/grafana", "./grafana:/etc/grafana/provisioning"]
+    ports: ["3001:3000"]
+    profiles: ["monitoring"]
+
+  loki:
+    image: grafana/loki:latest
+    ports: ["3100:3100"]
+    profiles: ["monitoring"]
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: postgres://postgres:postgres@postgres:5432/framedobsessions?sslmode=disable
+    depends_on:
+      postgres: {condition: service_healthy}
+    profiles: ["monitoring"]
+
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    profiles: ["monitoring"]
+
+volumes:
+  pgdata:
+  redisdata:
+  grafana:
