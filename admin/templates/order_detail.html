@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block actions %}
+  <a class="btn btn--sm" href="{{ url_for('orders.packing_slip', order_id=order.id) }}">{{ icon('print', 16) }} Packing slip</a>
+{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <span class="chip {% if order.payment_status_t == 'paid' %}chip--ok{% elif order.payment_status_t == 'failed' %}chip--danger{% else %}chip--warn{% endif %}">
+    {{ order.payment_status_t|replace('_',' ') }}
+  </span>
+  <span class="chip chip--info">{{ order.fulfilment_status_t|replace('_',' ') }}</span>
+  {% if order.production_rollup_t %}<span class="chip">production: {{ order.production_rollup_t }}</span>{% endif %}
+  {% if order.cancelled_at %}<span class="chip chip--danger">cancelled {{ order.cancelled_at|ago }}</span>{% endif %}
+  <span class="spacer" style="margin-left:auto"></span>
+  <span class="metric__foot">Placed {{ order.placed_at.strftime('%d %b %Y, %H:%M') }} UTC</span>
+</div>
+
+<div class="grid grid--2">
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Line items</h2></div>
+    <div class="panel__body panel__body--flush">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Item</th><th>Qty</th><th>Station</th><th class="right">Unit</th><th class="right">Margin</th></tr></thead>
+          <tbody>
+            {% for item in order['items'] %}
+            <tr>
+              <td data-label="Item">
+                <strong>{{ item.name_snapshot }}</strong><br>
+                <span class="mono" style="color:var(--text-faint);font-size:12px">{{ item.sku_snapshot }}</span><br>
+                <span style="color:var(--text-muted);font-size:12px">
+                  {{ item.attrs_snapshot.frame }} · {{ item.attrs_snapshot.size }} · {{ item.attrs_snapshot.poster_theme|replace('_',' ') }}
+                </span>
+              </td>
+              <td data-label="Qty" class="num">
+                {{ item.qty }}{% if item.refunded_qty %}<br><small style="color:var(--danger)">{{ item.refunded_qty }} refunded</small>{% endif %}
+              </td>
+              <td data-label="Station">
+                <span class="chip {% if item.production_status == 'blocked' %}chip--danger{% elif item.production_status == 'packed' %}chip--ok{% endif %}">
+                  {{ item.production_status }}
+                </span>
+                {% if item.blocked_reason %}<br><small style="color:var(--danger)">{{ item.blocked_reason }}</small>{% endif %}
+              </td>
+              <td data-label="Unit" class="right money">{{ item.unit_price_cents|money }}</td>
+              <td data-label="Margin" class="right money">{{ ((item.unit_price_cents - item.cost_cents) * item.qty)|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--s4)">
+    <div class="panel">
+      <div class="panel__head"><h2 class="panel__title">Totals</h2></div>
+      <div class="panel__body">
+        <dl class="kv">
+          <dt>Subtotal</dt><dd class="money">{{ order.subtotal_cents|money }}</dd>
+          <dt>Discount</dt><dd class="money">−{{ order.discount_cents|money }}</dd>
+          <dt>Shipping</dt><dd class="money">{{ order.shipping_cents|money }}</dd>
+          <dt>Tax</dt><dd class="money">{{ order.tax_cents|money }}</dd>
+          <dt><strong>Total</strong></dt><dd class="money"><strong>{{ order.total_cents|money }}</strong></dd>
+          {% if order.refunded_cents %}<dt>Refunded</dt><dd class="money" style="color:var(--danger)">−{{ order.refunded_cents|money }}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2 class="panel__title">Ship to</h2></div>
+      <div class="panel__body">
+        <address style="font-style:normal;line-height:1.7">
+          <strong>{{ order.ship_name }}</strong><br>
+          {{ order.ship_street }}{% if order.ship_unit %}, {{ order.ship_unit }}{% endif %}<br>
+          {{ order.ship_city }}, {{ order.ship_state }} {{ order.ship_zip }}<br>
+          {{ order.ship_country }}
+        </address>
+        {% if can(Perm.CUSTOMER_VIEW) %}
+          <p style="margin-bottom:0;color:var(--text-muted);font-size:13px">{{ order.email }}{% if order.phone %} · {{ order.phone }}{% endif %}</p>
+        {% endif %}
+        {% if order.ship_instructions %}
+          <div class="alert alert--info" style="margin-top:var(--s3)">{{ icon('alert') }}<span>{{ order.ship_instructions }}</span></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can(Perm.ORDER_EDIT) and not order.cancelled_at %}
+<div class="grid grid--2">
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Ship it</h2></div>
+    <div class="panel__body">
+      <form method="post" action="{{ url_for('orders.ship', order_id=order.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field-row">
+          <div class="field">
+            <label for="carrier">Carrier</label>
+            <input id="carrier" name="carrier" type="text" placeholder="Royal Mail, UPS…" required>
+          </div>
+          <div class="field">
+            <label for="tracking_no">Tracking number</label>
+            <input id="tracking_no" name="tracking_no" type="text" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="tracking_url">Tracking URL <span class="hint">optional</span></label>
+          <input id="tracking_url" name="tracking_url" type="url" placeholder="https://">
+        </div>
+        <button class="btn btn--primary" type="submit">{{ icon('box', 16) }} Mark shipped</button>
+      </form>
+
+      {% if order.shipments %}
+      <ul class="timeline" style="margin-top:var(--s4)">
+        {% for s in order.shipments %}
+        <li><time>{{ s.shipped_at.strftime('%d %b %H:%M') }}</time>
+          <span>{{ s.carrier }} — <span class="mono">{{ s.tracking_no }}</span></span></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if can(Perm.ORDER_REFUND) %}
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Refund</h2></div>
+    <div class="panel__body">
+      <form method="post" action="{{ url_for('orders.refund', order_id=order.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="order_item_id">Line item</label>
+          <select id="order_item_id" name="order_item_id">
+            <option value="">Whole order</option>
+            {% for item in order['items'] %}
+              <option value="{{ item.id }}">{{ item.name_snapshot }} — {{ item.sku_snapshot }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="amount">Amount (USD)</label>
+            <input id="amount" name="amount" type="text" inputmode="decimal" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label for="qty">Quantity <span class="hint">if per item</span></label>
+            <input id="qty" name="qty" type="number" min="0" step="1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="reason">Reason</label>
+          <input id="reason" name="reason" type="text" required placeholder="Damaged in transit">
+        </div>
+        <label class="checkbox"><input type="checkbox" name="restock"> Put the components back into stock</label>
+        <button class="btn btn--danger" type="submit">{{ icon('money', 16) }} Issue refund</button>
+        <p class="metric__foot" style="margin-bottom:0">
+          History is never edited. A refund is recorded as a new row against the original line.
+        </p>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if order.refunds %}
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Refund history</h2></div>
+  <div class="panel__body">
+    <ul class="timeline">
+      {% for r in order.refunds %}
+      <li><time>{{ r.created_at.strftime('%d %b %H:%M') }}</time>
+        <span>{{ r.amount_cents|money }} — {{ r.reason }}{% if r.restocked %} <span class="chip chip--ok">restocked</span>{% endif %}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+{% if can(Perm.ORDER_CANCEL) and not order.cancelled_at %}
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title" style="color:var(--danger)">Cancel this order</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('orders.cancel', order_id=order.id) }}"
+          onsubmit="return confirm('Cancel {{ order.order_no }}? This cannot be undone.')">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="reason-cancel">Reason</label>
+        <input id="reason-cancel" name="reason" type="text" required>
+      </div>
+      <label class="checkbox"><input type="checkbox" name="restock" checked> Restock every component</label>
+      <button class="btn btn--danger" type="submit">Cancel order</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

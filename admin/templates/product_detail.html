@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="grid grid--2">
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Details</h2></div>
+    <div class="panel__body">
+      {% if can(Perm.PRODUCT_EDIT) %}
+      <form method="post" action="{{ url_for('catalog.update_product', product_id=product.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
+          <input id="name" name="name" type="text" value="{{ product.name }}" required maxlength="200">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="brand">Brand</label>
+            <input id="brand" name="brand" type="text" value="{{ product.brand or '' }}">
+          </div>
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              {% for c in ['hotwheels', 'cricket', 'anime', 'nature', 'motivation'] %}
+                <option value="{{ c }}" {% if product.category == c %}selected{% endif %}>{{ c|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              {% for s in ['draft', 'active', 'archived'] %}
+                <option value="{{ s }}" {% if product.status_t == s %}selected{% endif %}>{{ s|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="position">Sort position</label>
+            <input id="position" name="position" type="number" value="{{ product.position }}">
+          </div>
+        </div>
+        <div class="field">
+          <label for="short_desc">Short description</label>
+          <input id="short_desc" name="short_desc" type="text" value="{{ product.short_desc or '' }}">
+          <span class="hint">Shown on cards and used as the page meta description.</span>
+        </div>
+        <div class="field">
+          <label for="description">Long description</label>
+          <textarea id="description" name="description">{{ product.description or '' }}</textarea>
+        </div>
+        <label class="checkbox">
+          <input type="checkbox" name="featured" {% if product.featured %}checked{% endif %}> Feature on the homepage
+        </label>
+        <button class="btn btn--primary" type="submit">{{ icon('check', 16) }} Save changes</button>
+      </form>
+      {% else %}
+        <dl class="kv">
+          <dt>Slug</dt><dd class="mono">{{ product.slug_t }}</dd>
+          <dt>Brand</dt><dd>{{ product.brand or '—' }}</dd>
+          <dt>Category</dt><dd>{{ product.category }}</dd>
+          <dt>Status</dt><dd>{{ product.status_t }}</dd>
+        </dl>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--s4)">
+    <div class="panel">
+      <div class="panel__head"><h2 class="panel__title">Images</h2></div>
+      <div class="panel__body">
+        <div style="display:flex;gap:var(--s2);flex-wrap:wrap">
+          {% for img in product.images %}
+            <img class="thumb" style="width:64px;height:64px" src="{{ img.url }}" alt="{{ img.role }}" loading="lazy" width="64" height="64">
+          {% else %}
+            <p class="metric__foot">No images yet. Drop files into <code>static/img/posters/</code> and reseed.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2 class="panel__title">Tags</h2></div>
+      <div class="panel__body">
+        <div style="display:flex;gap:var(--s2);flex-wrap:wrap">
+          {% for t in product.tags %}<span class="chip">{{ t.tag }}</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if can(Perm.ARCHIVE) %}
+    <div class="panel">
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('catalog.archive_product', product_id=product.id) }}"
+              onsubmit="return confirm('Archive {{ product.name }}? It disappears from the storefront but stays on past orders.')">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="btn btn--danger btn--block" type="submit">Archive product</button>
+        </form>
+        <p class="metric__foot" style="margin-bottom:0">
+          Archive, never delete: orders and reports reference these rows.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Variants</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">4 frames × 4 sizes. Buildable is what current component stock allows.</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>SKU</th><th>Frame</th><th>Size</th><th class="right">Price</th><th class="right">Sale</th>
+                   <th class="right">Buildable</th><th>Status</th>{% if can(Perm.PRICE_EDIT) %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+          {% for v in product.variants %}
+          <tr>
+            {% if can(Perm.PRICE_EDIT) %}
+            <form method="post" action="{{ url_for('catalog.update_variant', variant_id=v.id) }}" id="v{{ v.id }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ url_for('catalog.product_detail', product_id=product.id) }}">
+            </form>
+            {% endif %}
+            <td data-label="SKU" class="mono">{{ v.sku }}</td>
+            <td data-label="Frame">{{ v.frame }}</td>
+            <td data-label="Size">{{ v.size }}</td>
+            <td data-label="Price" class="right">
+              {% if can(Perm.PRICE_EDIT) %}
+                <input form="v{{ v.id }}" name="price" type="text" inputmode="decimal" value="{{ '%.2f'|format(v.price_cents / 100) }}"
+                       style="width:90px;text-align:right" aria-label="Price for {{ v.sku }}">
+              {% else %}<span class="money">{{ v.price_cents|money }}</span>{% endif %}
+            </td>
+            <td data-label="Sale" class="right">
+              {% if can(Perm.PRICE_EDIT) %}
+                <input form="v{{ v.id }}" name="sale_price" type="text" inputmode="decimal"
+                       value="{{ '%.2f'|format(v.sale_price_cents / 100) if v.sale_price_cents else '' }}"
+                       placeholder="—" style="width:90px;text-align:right" aria-label="Sale price for {{ v.sku }}">
+              {% else %}<span class="money">{{ v.sale_price_cents|money if v.sale_price_cents else '—' }}</span>{% endif %}
+            </td>
+            <td data-label="Buildable" class="right num">
+              <span class="chip {% if v.buildable <= 0 %}chip--danger{% elif v.buildable < 5 %}chip--warn{% else %}chip--ok{% endif %}">{{ v.buildable }}</span>
+            </td>
+            <td data-label="Status">
+              {% if can(Perm.PRICE_EDIT) %}
+                <select form="v{{ v.id }}" name="status" aria-label="Status for {{ v.sku }}">
+                  {% for s in ['active', 'draft', 'archived'] %}
+                    <option value="{{ s }}" {% if v.status_t == s %}selected{% endif %}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+              {% else %}{{ v.status_t }}{% endif %}
+            </td>
+            {% if can(Perm.PRICE_EDIT) %}
+            <td data-label=""><button class="btn btn--sm" form="v{{ v.id }}" type="submit">Save</button></td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

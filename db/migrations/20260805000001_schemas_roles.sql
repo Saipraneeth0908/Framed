@@ -45,6 +45,11 @@ revoke all on schema public from public;
 revoke all on database framedobsessions from public;
 grant connect on database framedobsessions to store_app, admin_app, ingest, etl, bi_reader;
 
+-- The enum types in migration 002 live in `public`. USAGE (never CREATE) is
+-- required to *name* a type -- without it an explicit `::product_status` cast
+-- fails with "type does not exist" even though the column works fine.
+grant usage on schema public to store_app, admin_app, ingest, etl, bi_reader;
+
 grant usage on schema store to store_app, admin_app, etl;
 grant usage on schema ops   to admin_app, etl;
 -- store_app gets USAGE on raw for exactly one table: raw.outbox (granted in

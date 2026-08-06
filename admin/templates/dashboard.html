@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+{% if board.ledger_drift %}
+  <div class="alert alert--error" role="alert">
+    {{ icon('alert') }}
+    <span><strong>Inventory ledger drift on {{ board.ledger_drift }} component{{ '' if board.ledger_drift == 1 else 's' }}.</strong>
+    The cached balance no longer matches the ledger. Run <code>select * from ops.ledger_drift()</code> before trusting stock numbers.</span>
+  </div>
+{% endif %}
+
+<section aria-labelledby="needs-you">
+  <h2 id="needs-you" class="sr-only">Needs a human</h2>
+  <div class="grid grid--metrics">
+    <a class="metric" href="{{ url_for('orders.list_orders', status='to_fulfil') }}">
+      <span class="metric__label">{{ icon('box', 14) }} To fulfil</span>
+      <span class="metric__value num">{{ board.to_fulfil }}</span>
+      <span class="metric__foot">paid, not yet shipped</span>
+    </a>
+    <a class="metric {% if board.blocked_items %}metric--alert{% endif %}" href="{{ url_for('production.board') }}">
+      <span class="metric__label">{{ icon('alert', 14) }} Blocked</span>
+      <span class="metric__value num">{{ board.blocked_items }}</span>
+      <span class="metric__foot">line items stuck at a station</span>
+    </a>
+    <a class="metric {% if board.stuck_orders %}metric--warn{% endif %}" href="{{ url_for('orders.list_orders', status='to_fulfil') }}">
+      <span class="metric__label">{{ icon('clock', 14) }} Aging</span>
+      <span class="metric__value num">{{ board.stuck_orders }}</span>
+      <span class="metric__foot">unshipped over {{ stuck_hours }}h</span>
+    </a>
+    <a class="metric {% if board.low_components %}metric--warn{% endif %}" href="{{ url_for('inventory.reorder') }}">
+      <span class="metric__label">{{ icon('inventory', 14) }} Low stock</span>
+      <span class="metric__value num">{{ board.low_components }}</span>
+      <span class="metric__foot">components at or below threshold</span>
+    </a>
+    <div class="metric">
+      <span class="metric__label">{{ icon('money', 14) }} Abandoned 24h</span>
+      <span class="metric__value money">{{ board.abandoned_cents|money }}</span>
+      <span class="metric__foot">{{ board.stale_carts }} cart{{ '' if board.stale_carts == 1 else 's' }} idle 30m+</span>
+    </div>
+    <div class="metric {% if board.payment_failures %}metric--alert{% endif %}">
+      <span class="metric__label">{{ icon('alert', 14) }} Payment failures</span>
+      <span class="metric__value num">{{ board.payment_failures }}</span>
+      <span class="metric__foot">in the last hour</span>
+    </div>
+  </div>
+</section>
+
+<section class="grid grid--2" aria-labelledby="trade">
+  <h2 id="trade" class="sr-only">Trading</h2>
+
+  <div class="panel">
+    <div class="panel__head">
+      <h3 class="panel__title">Revenue, last 30 days</h3>
+      <span class="spacer"></span>
+      <span class="chip">{{ kpis.revenue_7d|money }} this week</span>
+    </div>
+    <div class="panel__body">
+      {% set peak = (spark | map(attribute='cents') | max) or 1 %}
+      <svg class="spark" viewBox="0 0 {{ (spark|length) * 10 }} 60" preserveAspectRatio="none"
+           role="img" aria-label="Daily revenue for the last 30 days. Highest day {{ peak|money }}.">
+        {% for point in spark %}
+          {% set h = (point.cents / peak * 52) | round(1) %}
+          <rect x="{{ loop.index0 * 10 + 2 }}" y="{{ 56 - h }}" width="6" height="{{ h if h > 1 else 1 }}"
+                rx="1.5" fill="var(--primary)" opacity="{{ 0.45 if point.cents == 0 else 1 }}"></rect>
+        {% endfor %}
+      </svg>
+      <dl class="kv" style="margin-top:var(--s4)">
+        <dt>Today</dt><dd class="money">{{ kpis.revenue_today|money }} · {{ kpis.orders_today }} orders</dd>
+        <dt>Last 7 days</dt><dd class="money">{{ kpis.revenue_7d|money }} · {{ kpis.orders_7d }} orders</dd>
+        <dt>AOV (30d)</dt><dd class="money">{{ kpis.aov_30d|money }}</dd>
+        <dt>Gross margin (30d)</dt><dd class="money">{{ kpis.margin_30d|money }}</dd>
+      </dl>
+      <p class="metric__foot" style="margin-bottom:0">
+        Margin is revenue minus the bill-of-materials cost frozen onto each line at purchase.
+      </p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head">
+      <h3 class="panel__title">Latest orders</h3>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" href="{{ url_for('orders.list_orders') }}">All orders {{ icon('arrow', 14) }}</a>
+    </div>
+    <div class="panel__body panel__body--flush">
+      {% if recent %}
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th class="right">Total</th></tr></thead>
+          <tbody>
+            {% for o in recent %}
+            <tr>
+              <td data-label="Order"><a class="mono" href="{{ url_for('orders.order_detail', order_id=o.id) }}">{{ o.order_no }}</a></td>
+              <td data-label="Customer">{{ o.ship_name or o.email }}</td>
+              <td data-label="Status">
+                <span class="chip {{ 'chip--ok' if o.payment_status == 'paid' else 'chip--warn' }}">{{ o.payment_status|replace('_',' ') }}</span>
+              </td>
+              <td data-label="Total" class="right money">{{ o.total_cents|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">
+        <p class="empty__title">No orders yet</p>
+        <p>They will appear here the moment the first checkout completes.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

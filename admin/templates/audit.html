@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="alert alert--info">
+  {{ icon('shield') }}
+  <span>Written by a database trigger, not by application code. There is no code path that can mutate a
+  record without leaving a row here.</span>
+</div>
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filter by table">
+    <a href="{{ url_for('system.audit') }}" {% if not entity %}aria-current="page"{% endif %}>Everything</a>
+    {% for e in ['store.orders', 'store.order_items', 'store.products', 'store.variants',
+                 'ops.components', 'ops.users', 'ops.settings', 'store.refunds'] %}
+      <a href="{{ url_for('system.audit', entity=e) }}" {% if entity == e %}aria-current="page"{% endif %}>{{ e }}</a>
+    {% endfor %}
+  </nav>
+</div>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Record</th><th>Change</th></tr></thead>
+        <tbody>
+          {% for e in entries %}
+          <tr>
+            <td data-label="When">{{ e.created_at.strftime('%d %b %H:%M:%S') }}</td>
+            <td data-label="Who">{{ e.actor_name or 'system' }}</td>
+            <td data-label="Action">
+              <span class="chip {% if e.action == 'delete' %}chip--danger{% elif e.action == 'insert' %}chip--ok{% endif %}">{{ e.action }}</span>
+            </td>
+            <td data-label="Record"><span class="mono">{{ e.entity }}#{{ e.entity_id }}</span></td>
+            <td data-label="Change">
+              {% if e.action == 'update' and e.before and e.after %}
+                {% set changed = e.after.items() | rejectattr('0', 'in', ['updated_at']) | list %}
+                <span style="font-size:12px;color:var(--text-muted)">
+                  {%- for k, v in changed if e.before.get(k) != v -%}
+                    <span class="mono">{{ k }}</span>: {{ e.before.get(k) }} → {{ v }}{{ ', ' if not loop.last }}
+                  {%- endfor -%}
+                </span>
+              {% else %}
+                <span style="font-size:12px;color:var(--text-faint)">{{ e.request_id[:8] if e.request_id else '—' }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

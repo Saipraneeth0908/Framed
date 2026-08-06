@@ -1,0 +1,29 @@
+{% from "_icons.html" import icon %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ page_title|default('Sign in') }} · Framed Obsessions</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+
+<main class="auth-page">
+  <div class="auth-card">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true">FO</span>
+      <span class="brand__text">Framed Obsessions<small>Operations</small></span>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h1 class="panel__title">{% block heading %}{% endblock %}</h1></div>
+      <div class="panel__body">
+        {% if error %}
+          <div class="alert alert--error" role="alert">{{ icon('alert') }}<span>{{ error }}</span></div>
+        {% endif %}
+        {% block form %}{% endblock %}
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-faint);font-size:12px;margin-top:var(--s4)">
+      Staff access only. All actions are logged.
+    </p>
+  </div>
+</main>

@@ -1,0 +1,18 @@
+{% extends "_auth.html" %}
+{% block heading %}Sign in{% endblock %}
+{% block form %}
+<form method="post" novalidate style="margin-top:var(--s4)">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="email">Work email <span class="req" aria-hidden="true">*</span></label>
+    <input id="email" name="email" type="email" required autocomplete="username"
+           autocapitalize="off" spellcheck="false" autofocus>
+  </div>
+  <div class="field">
+    <label for="password">Password <span class="req" aria-hidden="true">*</span></label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+    <span class="hint">Locked for a while after five wrong attempts.</span>
+  </div>
+  <button class="btn btn--primary btn--block" type="submit">Continue</button>
+</form>
+{% endblock %}

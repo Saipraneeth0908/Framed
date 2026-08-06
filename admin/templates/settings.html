@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Store settings</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('system.update_settings') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      {% for key, value in settings.items() %}
+      <div class="field">
+        <label for="s-{{ loop.index }}">{{ key }}</label>
+        <input id="s-{{ loop.index }}" name="{{ key }}" type="text" value="{{ value|tojson }}"
+               {% if not can(Perm.SETTINGS_EDIT) %}readonly{% endif %}>
+      </div>
+      {% endfor %}
+      {% if can(Perm.SETTINGS_EDIT) %}
+        <button class="btn btn--primary" type="submit">{{ icon('check', 16) }} Save settings</button>
+      {% else %}
+        <p class="metric__foot">Your role can read settings but not change them.</p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Your account</h2></div>
+  <div class="panel__body">
+    <dl class="kv">
+      <dt>Signed in as</dt><dd>{{ g.user.name }} ({{ g.user.email }})</dd>
+      <dt>Role</dt><dd>{{ g.user.role }}</dd>
+      <dt>Two-factor</dt><dd>{{ 'on' if g.user.totp_enabled else 'off' }}</dd>
+    </dl>
+    <div class="btn-row" style="margin-top:var(--s4)">
+      <a class="btn" href="{{ url_for('auth.change_password') }}">Change password</a>
+      {% if not g.user.totp_enabled %}
+        <a class="btn btn--primary" href="{{ url_for('auth.enroll') }}">{{ icon('shield', 16) }} Set up two-factor</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Your permissions</h2></div>
+  <div class="panel__body">
+    <div style="display:flex;gap:var(--s2);flex-wrap:wrap">
+      {% for p in permissions_for(g.user.role)|sort(attribute='value') %}
+        <span class="chip">{{ p.value }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

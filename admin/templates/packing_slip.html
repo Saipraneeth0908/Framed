@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="panel__body">
+    <div style="display:flex;justify-content:space-between;gap:var(--s5);flex-wrap:wrap">
+      <div>
+        <p style="font-weight:700;font-size:18px;margin:0">Framed Obsessions</p>
+        <p style="color:var(--text-muted);margin:var(--s1) 0 0">Packing slip</p>
+      </div>
+      <div style="text-align:right">
+        <p class="mono" style="font-size:18px;margin:0">{{ order.order_no }}</p>
+        <p style="color:var(--text-muted);margin:var(--s1) 0 0">{{ order.placed_at.strftime('%d %b %Y') }}</p>
+      </div>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--border);margin:var(--s5) 0">
+
+    <address style="font-style:normal;line-height:1.7">
+      <strong>{{ order.ship_name }}</strong><br>
+      {{ order.ship_street }}{% if order.ship_unit %}, {{ order.ship_unit }}{% endif %}<br>
+      {{ order.ship_city }}, {{ order.ship_state }} {{ order.ship_zip }}<br>
+      {{ order.ship_country }}
+    </address>
+
+    <table class="data" style="margin-top:var(--s5)">
+      <thead><tr><th>Item</th><th>Configuration</th><th class="right">Qty</th></tr></thead>
+      <tbody>
+        {% for item in order['items'] %}
+        <tr>
+          <td data-label="Item">{{ item.name_snapshot }}<br><span class="mono" style="font-size:12px">{{ item.sku_snapshot }}</span></td>
+          <td data-label="Configuration">{{ item.attrs_snapshot.frame }} · {{ item.attrs_snapshot.size }} · {{ item.attrs_snapshot.poster_theme|replace('_',' ') }}</td>
+          <td data-label="Qty" class="right num">{{ item.qty }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if order.ship_instructions %}
+      <p style="margin-top:var(--s5)"><strong>Delivery note:</strong> {{ order.ship_instructions }}</p>
+    {% endif %}
+
+    <p style="margin-top:var(--s6);color:var(--text-muted);font-size:13px">
+      Prices are not shown on packing slips. Thank you for framing your obsession.
+    </p>
+  </div>
+</div>
+{% endblock %}

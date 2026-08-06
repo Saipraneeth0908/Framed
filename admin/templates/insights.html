@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+{% if not marts_ready %}
+<div class="alert alert--info">
+  {{ icon('alert') }}
+  <span><strong>The analytics marts have not been built yet.</strong>
+  Run <code>dbt build</code> from <code>dbt/</code> (or wait for the nightly job) to populate
+  <code>mart.*</code>. Operational screens are unaffected — they read the OLTP tables directly.</span>
+</div>
+{% endif %}
+
+{% if not configured %}
+<div class="panel">
+  <div class="panel__body">
+    <h2 class="panel__title" style="margin-top:0">Analytics is not connected yet</h2>
+    <p style="color:var(--text-muted);max-width:64ch">
+      Business analytics lives in Metabase reading the <code>mart</code> schema as <code>bi_reader</code>,
+      embedded here with a signed token so you only sign in once. Two environment variables switch it on:
+    </p>
+    <pre class="secret" style="text-align:left">METABASE_SITE_URL=https://metabase.framedobsessions.com
+METABASE_EMBED_SECRET=&lt;the embedding secret from Metabase admin&gt;</pre>
+    <p style="color:var(--text-muted)">
+      Start it locally with <code>docker compose --profile bi up -d metabase</code>, then point it at this
+      database using the <code>bi_reader</code> role. That role is read-only and can see the marts and
+      nothing else — a runaway question cannot lock checkout or read customer PII.
+    </p>
+  </div>
+</div>
+
+<div class="grid grid--2">
+  {% for dash, _ in dashboards %}
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">{{ dash.title }}</h2>
+      <span class="spacer"></span><span class="chip">dashboard {{ dash.metabase_id }}</span></div>
+    <div class="panel__body"><p style="color:var(--text-muted);margin:0">{{ dash.blurb }}</p></div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<nav class="tabs" aria-label="Dashboards">
+  {% for dash, _ in dashboards %}
+    <a href="#dash-{{ dash.key }}">{{ dash.title }}</a>
+  {% endfor %}
+</nav>
+
+{% for dash, url in dashboards %}
+<section class="panel" id="dash-{{ dash.key }}">
+  <div class="panel__head">
+    <h2 class="panel__title">{{ dash.title }}</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">{{ dash.blurb }}</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <iframe class="embed-frame" src="{{ url }}" title="{{ dash.title }}" loading="lazy"></iframe>
+  </div>
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}

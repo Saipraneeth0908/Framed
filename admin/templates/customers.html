@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block actions %}
+  {% if can(Perm.CUSTOMER_EXPORT) %}
+    <a class="btn btn--sm" href="{{ url_for('people.customers_csv') }}">{{ icon('download', 16) }} Export CSV</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <form method="get" role="search">
+    <label class="sr-only" for="q">Search customers</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Email or name">
+    <button class="btn" type="submit">{{ icon('search', 16) }}<span class="sr-only">Search</span></button>
+  </form>
+</div>
+
+{% if can(Perm.CUSTOMER_EXPORT) %}
+<div class="alert alert--info">
+  {{ icon('shield') }}
+  <span>Exporting writes an audit entry. This file is the complete customer PII set — treat it accordingly.</span>
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if customers %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Customer</th><th>Email</th><th class="right">Orders</th><th class="right">Lifetime value</th><th>Last order</th></tr></thead>
+        <tbody>
+          {% for c in customers %}
+          <tr>
+            <td data-label="Customer">{{ c.name or '—' }}</td>
+            <td data-label="Email">{{ c.email }}</td>
+            <td data-label="Orders" class="right num">{{ c.orders }}</td>
+            <td data-label="Lifetime value" class="right money">{{ c.ltv_cents|money }}</td>
+            <td data-label="Last order">{{ c.last_order_at|ago }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><p class="empty__title">No customers yet</p><p>A customer row is created on the first checkout.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

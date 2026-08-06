@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block actions %}
+  <a class="btn btn--sm" href="{{ url_for('inventory.reorder') }}">{{ icon('box', 16) }} Reorder list</a>
+{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filter components">
+    <a href="{{ url_for('inventory.components') }}" {% if not kind and not low %}aria-current="page"{% endif %}>All</a>
+    <a href="{{ url_for('inventory.components', low='1') }}" {% if low %}aria-current="page"{% endif %}>Low stock</a>
+    {% for k in ['frame', 'paper', 'mount', 'glass', 'packaging'] %}
+      <a href="{{ url_for('inventory.components', kind=k) }}" {% if kind == k %}aria-current="page"{% endif %}>{{ k|capitalize }}</a>
+    {% endfor %}
+  </nav>
+</div>
+
+<p class="metric__foot" style="margin:0">
+  Stock is tracked per component, not per finished SKU: 11 products × 16 variants is 176 SKUs but only
+  {{ components|length }} real things on a shelf. <strong>Available</strong> is on hand minus reserved.
+</p>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>SKU</th><th>Component</th><th class="right">On hand</th><th class="right">Reserved</th>
+              <th class="right">Available</th><th>State</th><th class="right">Unit cost</th></tr>
+        </thead>
+        <tbody>
+          {% for c in components %}
+          <tr>
+            <td data-label="SKU"><a class="mono" href="{{ url_for('inventory.component_detail', component_id=c.id) }}">{{ c.sku }}</a></td>
+            <td data-label="Component">{{ c.name }}<br><small style="color:var(--text-faint)">used by {{ c.used_by }} variants</small></td>
+            <td data-label="On hand" class="right num">{{ c.on_hand }}</td>
+            <td data-label="Reserved" class="right num">{{ c.reserved }}</td>
+            <td data-label="Available" class="right num"><strong>{{ c.available }}</strong></td>
+            <td data-label="State">
+              {% if c.available <= 0 %}<span class="chip chip--danger">out</span>
+              {% elif c.available <= c.low_threshold %}<span class="chip chip--warn">low</span>
+              {% else %}<span class="chip chip--ok">ok</span>{% endif %}
+            </td>
+            <td data-label="Unit cost" class="right money">{{ c.unit_cost_cents|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="grid grid--metrics">
+  <div class="metric"><span class="metric__label">On hand</span><span class="metric__value num">{{ component.on_hand }}</span></div>
+  <div class="metric"><span class="metric__label">Reserved</span><span class="metric__value num">{{ component.reserved }}</span>
+    <span class="metric__foot">held for paid orders</span></div>
+  <div class="metric {% if component.available <= component.low_threshold %}metric--warn{% endif %}">
+    <span class="metric__label">Available</span><span class="metric__value num">{{ component.available }}</span>
+    <span class="metric__foot">threshold {{ component.low_threshold }}</span></div>
+  <div class="metric"><span class="metric__label">Unit cost</span><span class="metric__value money">{{ component.unit_cost_cents|money }}</span>
+    <span class="metric__foot">{{ component.supplier or 'no supplier set' }}{% if component.lead_days %} · {{ component.lead_days }}d lead{% endif %}</span></div>
+</div>
+
+{% if can(Perm.STOCK_EDIT) %}
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Record a movement</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('inventory.adjust', component_id=component.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field-row">
+        <div class="field">
+          <label for="delta">Change <span class="req" aria-hidden="true">*</span></label>
+          <input id="delta" name="delta" type="number" step="1" required placeholder="e.g. 40 or -3">
+          <span class="hint">Positive receives, negative writes off.</span>
+        </div>
+        <div class="field">
+          <label for="reason">Reason</label>
+          <select id="reason" name="reason">
+            <option value="receive">Received from supplier</option>
+            <option value="damage">Damaged / scrapped</option>
+            <option value="correction">Stock-count correction</option>
+            <option value="return">Customer return</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="note">Note</label>
+        <input id="note" name="note" type="text" placeholder="PO number, who counted it, why">
+      </div>
+      <button class="btn btn--primary" type="submit">{{ icon('plus', 16) }} Post to ledger</button>
+      <p class="metric__foot" style="margin-bottom:0">
+        The ledger is append-only. A mistake is corrected by posting the opposite movement, never by editing.
+      </p>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Ledger</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">most recent 200 movements</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>When</th><th>Reason</th><th class="right">On hand</th><th class="right">Reserved</th><th>Ref</th><th>Who</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for row in component.ledger %}
+          <tr>
+            <td data-label="When">{{ row.created_at.strftime('%d %b %H:%M') }}</td>
+            <td data-label="Reason"><span class="chip">{{ row.reason }}</span></td>
+            <td data-label="On hand" class="right num" style="color:{{ 'var(--ok)' if row.delta > 0 else ('var(--danger)' if row.delta < 0 else 'var(--text-faint)') }}">
+              {{ '+' if row.delta > 0 else '' }}{{ row.delta or '—' }}
+            </td>
+            <td data-label="Reserved" class="right num">{{ ('+' if row.reserved_delta > 0 else '') ~ row.reserved_delta if row.reserved_delta else '—' }}</td>
+            <td data-label="Ref" class="mono">{{ row.sku_snapshot or '—' }}</td>
+            <td data-label="Who">{{ row.actor_name or 'system' }}</td>
+            <td data-label="Note">{{ row.note or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

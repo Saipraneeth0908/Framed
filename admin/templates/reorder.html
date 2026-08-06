@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block actions %}
+  <a class="btn btn--sm" href="{{ url_for('inventory.reorder_csv') }}">{{ icon('download', 16) }} CSV</a>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if rows %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>SKU</th><th>Component</th><th class="right">Available</th><th class="right">Threshold</th>
+                   <th class="right">Suggested</th><th>Supplier</th><th class="right">Lead</th><th class="right">Est. cost</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td data-label="SKU" class="mono">{{ r.sku }}</td>
+            <td data-label="Component">{{ r.name }}</td>
+            <td data-label="Available" class="right num" style="color:{{ 'var(--danger)' if r.available <= 0 else 'var(--warn)' }}">{{ r.available }}</td>
+            <td data-label="Threshold" class="right num">{{ r.low_threshold }}</td>
+            <td data-label="Suggested" class="right num"><strong>{{ r.suggested_qty }}</strong></td>
+            <td data-label="Supplier">{{ r.supplier or '—' }}</td>
+            <td data-label="Lead" class="right num">{{ r.lead_days or '—' }}d</td>
+            <td data-label="Est. cost" class="right money">{{ (r.suggested_qty * r.unit_cost_cents)|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty__title">Nothing to reorder</p>
+      <p>Every component is above its threshold.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<p class="metric__foot">Suggested quantity targets three times the low threshold, minus what is available.</p>
+{% endblock %}
