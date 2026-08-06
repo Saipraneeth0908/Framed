@@ -10,13 +10,20 @@ import logging
 import os
 from pathlib import Path
 
-from flask import Flask, g, render_template
+from flask import Flask, render_template
 
 from admin import auth, views
 from admin.rbac import Perm, has, permissions_for
 from admin.sessions import RedisSessionInterface
 from common import csrf
-from common.http import harden_session, init_health, init_request_id, init_security_headers, require_secret
+from common.http import (
+    harden_session,
+    init_health,
+    init_metrics,
+    init_request_id,
+    init_security_headers,
+    require_secret,
+)
 from db.conn import Role, tx
 
 HERE = Path(__file__).resolve().parent
@@ -91,6 +98,7 @@ def create_app() -> Flask:
                                page_title="Conflict"), 409
 
     init_health(app, ready_check=_ready)
+    init_metrics(app, service="admin")
     return app
 
 

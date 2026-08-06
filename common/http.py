@@ -84,6 +84,31 @@ def init_security_headers(app: Flask, *, csp: str, frame_ancestors_none: bool = 
     app.jinja_env.globals["csp_nonce"] = lambda: getattr(g, "csp_nonce", "")
 
 
+def init_metrics(app: Flask, *, service: str) -> None:
+    """RPS, latency quantiles by route, 5xx rate, in-flight -- on /metrics.
+
+    Grouped by url_rule rather than path, so /product/<slug> is one series
+    instead of one per product.
+    """
+    try:
+        from prometheus_client import CollectorRegistry
+        from prometheus_flask_exporter import PrometheusMetrics
+    except ImportError:                                  # pragma: no cover
+        log.warning("prometheus_flask_exporter missing; %s exports no metrics", service)
+        return
+    # Its own registry, not the process-global default. In production each app
+    # is its own process so it makes no difference; in the test suite both are
+    # imported together and the shared default raises on duplicate series.
+    metrics = PrometheusMetrics(
+        app, group_by="url_rule", defaults_prefix="flask", registry=CollectorRegistry()
+    )
+    metrics.info("fo_app_info", "Application metadata", service=service)
+    # /metrics must never require a session, and must never be public on the
+    # admin hostname -- Caddy keeps it internal.
+    app.view_functions["prometheus_metrics"].__fo_permission__ = None
+    app.view_functions["prometheus_metrics"].__fo_public__ = True
+
+
 def init_health(app: Flask, *, ready_check=None) -> None:
     """/healthz: is the process alive. /readyz: can it serve.
 

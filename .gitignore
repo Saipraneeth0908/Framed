@@ -20,3 +20,8 @@ build/
 .idea/
 server.stdout.log
 server.stderr.log
+
+# dbt build artifacts
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

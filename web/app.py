@@ -15,7 +15,14 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, redirect, render_template, request, session, url_for
 
 from common import csrf
-from common.http import harden_session, init_health, init_request_id, init_security_headers, require_secret
+from common.http import (
+    harden_session,
+    init_health,
+    init_metrics,
+    init_request_id,
+    init_security_headers,
+    require_secret,
+)
 from db.conn import Role, tx
 from web import carts as cart_repo
 from web.catalog import degraded, get_product_by_slug, load_categories, load_products, static_asset_exists
@@ -387,6 +394,7 @@ def _ready():
 
 
 init_health(app, ready_check=_ready)
+init_metrics(app, service="web")
 
 __all__ = [
     "app", "load_products", "get_product_by_slug", "static_asset_exists",

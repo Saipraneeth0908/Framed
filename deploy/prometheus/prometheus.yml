@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: production
+    service: framedobsessions
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs: [{targets: ["localhost:9090"]}]
+
+  # prometheus-flask-exporter on each Flask process: RPS, latency quantiles by
+  # route, 5xx rate, in-flight.
+  - job_name: web
+    static_configs: [{targets: ["web:8000"]}]
+  - job_name: admin
+    static_configs: [{targets: ["admin:8001"]}]
+  - job_name: collector
+    static_configs: [{targets: ["collector:8002"]}]
+
+  # The worker exposes both pipeline health and the business KPIs, so a
+  # stock-out routes through the same Alertmanager as a full disk.
+  - job_name: worker
+    static_configs: [{targets: ["worker:9101"]}]
+
+  - job_name: postgres
+    static_configs: [{targets: ["postgres_exporter:9187"]}]
+  - job_name: redis
+    static_configs: [{targets: ["redis_exporter:9121"]}]
+
+  # Internal monitoring cannot tell you the whole box is gone. UptimeRobot (or
+  # any external prober) is the second pair of eyes; blackbox is the first.
+  - job_name: blackbox
+    metrics_path: /probe
+    params: {module: [http_2xx]}
+    static_configs:
+      - targets:
+          - http://web:8000/healthz
+          - http://web:8000/readyz
+          - http://admin:8001/healthz
+          - http://collector:8002/healthz
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

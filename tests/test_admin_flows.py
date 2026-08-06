@@ -10,7 +10,6 @@ import pytest
 from db.conn import Role, tx
 from tests.conftest import ADMIN_PASSWORD
 
-
 # --------------------------------------------------------------------------- #
 # Login
 # --------------------------------------------------------------------------- #
@@ -80,7 +79,7 @@ def test_repeated_failures_lock_the_account(admin_app, staff):
     # Leave the account usable for the rest of the session.
     with tx(Role.SUPER) as cur:
         cur.execute("update ops.users set failed_attempts = 0, locked_until = null where email = 'fulfilment@test.local'")
-    from admin.auth import _redis, _attempt_key
+    from admin.auth import _attempt_key, _redis
 
     _redis().delete(_attempt_key("127.0.0.1", "fulfilment@test.local"))
 

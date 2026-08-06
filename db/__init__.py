@@ -8,6 +8,6 @@ Escape hatch (from the architecture doc): if CRUD boilerplate passes ~1,500
 lines, add SQLAlchemy Core for query building -- not the ORM.
 """
 
-from db.conn import fetch_all, fetch_one, execute, tx, pool, close_all, Role
+from db.conn import Role, close_all, execute, fetch_all, fetch_one, pool, tx
 
 __all__ = ["fetch_all", "fetch_one", "execute", "tx", "pool", "close_all", "Role"]

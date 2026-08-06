@@ -30503,3 +30503,648 @@ where sessions is null
 [0m21:12:31.903571 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002257A612480>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000022578AAC9B0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002257AB64650>]}
 [0m21:12:31.904826 [debug] [MainThread]: Flushing usage events
 [0m21:12:33.225299 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m21:15:44.133720 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000158929AEF60>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000158928A1DC0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015892DF4050>]}
+
+
+============================== 21:15:44.146474 | 2bd1b264-1855-4d8e-b766-b7093fb109a1 ==============================
+[0m21:15:44.146474 [info ] [MainThread]: Running with dbt=1.12.0
+[0m21:15:44.146474 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'no_print': 'None', 'maximum_seed_size_mib': '1', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'target_path': 'None', 'version_check': 'True', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'False', 'cache_selected_only': 'False', 'log_format': 'default', 'debug': 'False', 'fail_fast': 'False', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\downloadsssssss\\carswithframes\\carframe_store\\dbt', 'use_colors': 'True', 'hints_enabled': 'True', 'invocation_command': 'dbt build --select tag:realtime', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'C:\\downloadsssssss\\carswithframes\\carframe_store\\dbt\\logs'}
+[0m21:15:44.948750 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015895136750>]}
+[0m21:15:45.268549 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015892E53E90>]}
+[0m21:15:45.274542 [info ] [MainThread]: Registered adapter: postgres=1.9.0
+[0m21:15:46.785367 [debug] [MainThread]: checksum: e2cbede25a5153bb004517b05e339c83a8c533fedf50510dcc4e62d5727b6963, vars: {}, profile: framed_obsessions, target: dev, version: 1.12.0
+[0m21:15:47.696015 [debug] [MainThread]: Partial parsing enabled: 0 files deleted, 0 files added, 0 files changed.
+[0m21:15:47.698585 [debug] [MainThread]: Nothing changed, skipping partial parsing.
+[0m21:15:47.700344 [debug] [MainThread]: Partial parsing enabled, no changes found, skipping parsing
+[0m21:15:47.738293 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015895443B00>]}
+[0m21:15:48.444527 [debug] [MainThread]: Wrote artifact WritableManifest to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\manifest.json
+[0m21:15:48.458429 [debug] [MainThread]: Wrote artifact SemanticManifest to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\semantic_manifest.json
+[0m21:15:48.596352 [debug] [MainThread]: Wrote artifact OsiDocument to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\osi_document.json
+[0m21:15:48.909123 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000158957E2C30>]}
+[0m21:15:48.911311 [info ] [MainThread]: Found 21 models, 42 data tests, 14 sources, 476 macros
+[0m21:15:48.924053 [info ] [MainThread]: 
+[0m21:15:48.924613 [info ] [MainThread]: Concurrency: 4 threads (target='dev')
+[0m21:15:48.926299 [info ] [MainThread]: 
+[0m21:15:48.930421 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m21:15:48.946776 [debug] [ThreadPool]: Acquiring new postgres connection 'list_framedobsessions'
+[0m21:15:49.231573 [debug] [ThreadPool]: Using postgres connection "list_framedobsessions"
+[0m21:15:49.232580 [debug] [ThreadPool]: On list_framedobsessions: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "connection_name": "list_framedobsessions"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m21:15:49.235055 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m21:15:49.319564 [debug] [ThreadPool]: SQL status: SELECT 20 in 0.084 seconds
+[0m21:15:49.327557 [debug] [ThreadPool]: On list_framedobsessions: Close
+[0m21:15:49.349171 [debug] [ThreadPool]: Acquiring new postgres connection 'list_framedobsessions_mart'
+[0m21:15:49.361286 [debug] [ThreadPool]: Acquiring new postgres connection 'list_framedobsessions_stg'
+[0m21:15:49.386046 [debug] [ThreadPool]: Using postgres connection "list_framedobsessions_mart"
+[0m21:15:49.390820 [debug] [ThreadPool]: Using postgres connection "list_framedobsessions_stg"
+[0m21:15:49.392969 [debug] [ThreadPool]: On list_framedobsessions_mart: BEGIN
+[0m21:15:49.396645 [debug] [ThreadPool]: On list_framedobsessions_stg: BEGIN
+[0m21:15:49.399213 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m21:15:49.402124 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m21:15:49.447483 [debug] [ThreadPool]: SQL status: BEGIN in 0.049 seconds
+[0m21:15:49.448470 [debug] [ThreadPool]: Using postgres connection "list_framedobsessions_mart"
+[0m21:15:49.451108 [debug] [ThreadPool]: On list_framedobsessions_mart: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "connection_name": "list_framedobsessions_mart"} */
+select
+      'framedobsessions' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'mart'
+    union all
+    select
+      'framedobsessions' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'mart'
+    union all
+    select
+      'framedobsessions' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'mart'
+  
+[0m21:15:49.464688 [debug] [ThreadPool]: SQL status: BEGIN in 0.063 seconds
+[0m21:15:49.466729 [debug] [ThreadPool]: Using postgres connection "list_framedobsessions_stg"
+[0m21:15:49.468728 [debug] [ThreadPool]: On list_framedobsessions_stg: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "connection_name": "list_framedobsessions_stg"} */
+select
+      'framedobsessions' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'stg'
+    union all
+    select
+      'framedobsessions' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'stg'
+    union all
+    select
+      'framedobsessions' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'stg'
+  
+[0m21:15:49.471584 [debug] [ThreadPool]: SQL status: SELECT 10 in 0.018 seconds
+[0m21:15:49.476536 [debug] [ThreadPool]: On list_framedobsessions_mart: ROLLBACK
+[0m21:15:49.478965 [debug] [ThreadPool]: On list_framedobsessions_mart: Close
+[0m21:15:49.492951 [debug] [ThreadPool]: SQL status: SELECT 7 in 0.023 seconds
+[0m21:15:49.499127 [debug] [ThreadPool]: On list_framedobsessions_stg: ROLLBACK
+[0m21:15:49.502602 [debug] [ThreadPool]: On list_framedobsessions_stg: Close
+[0m21:15:49.526001 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:49.527885 [debug] [MainThread]: On master: BEGIN
+[0m21:15:49.528885 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m21:15:49.565960 [debug] [MainThread]: SQL status: BEGIN in 0.037 seconds
+[0m21:15:49.567033 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:49.567033 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "connection_name": "master"} */
+with relation as (
+        select
+            pg_rewrite.ev_class as class,
+            pg_rewrite.oid as id
+        from pg_rewrite
+    ),
+    class as (
+        select
+            oid as id,
+            relname as name,
+            relnamespace as schema,
+            relkind as kind
+        from pg_class
+    ),
+    dependency as (
+        select distinct
+            pg_depend.objid as id,
+            pg_depend.refobjid as ref
+        from pg_depend
+    ),
+    schema as (
+        select
+            pg_namespace.oid as id,
+            pg_namespace.nspname as name
+        from pg_namespace
+        where nspname != 'information_schema' and nspname not like 'pg\_%'
+    ),
+    referenced as (
+        select
+            relation.id AS id,
+            referenced_class.name ,
+            referenced_class.schema ,
+            referenced_class.kind
+        from relation
+        join class as referenced_class on relation.class=referenced_class.id
+        where referenced_class.kind in ('r', 'v', 'm')
+    ),
+    relationships as (
+        select
+            referenced.name as referenced_name,
+            referenced.schema as referenced_schema_id,
+            dependent_class.name as dependent_name,
+            dependent_class.schema as dependent_schema_id,
+            referenced.kind as kind
+        from referenced
+        join dependency on referenced.id=dependency.id
+        join class as dependent_class on dependency.ref=dependent_class.id
+        where
+            (referenced.name != dependent_class.name or
+             referenced.schema != dependent_class.schema)
+    )
+
+    select
+        referenced_schema.name as referenced_schema,
+        relationships.referenced_name as referenced_name,
+        dependent_schema.name as dependent_schema,
+        relationships.dependent_name as dependent_name
+    from relationships
+    join schema as dependent_schema on relationships.dependent_schema_id=dependent_schema.id
+    join schema as referenced_schema on relationships.referenced_schema_id=referenced_schema.id
+    group by referenced_schema, referenced_name, dependent_schema, dependent_name
+    order by referenced_schema, referenced_name, dependent_schema, dependent_name;
+[0m21:15:49.590384 [debug] [MainThread]: SQL status: SELECT 12 in 0.020 seconds
+[0m21:15:49.606781 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000158957E2D50>]}
+[0m21:15:49.611070 [debug] [MainThread]: On master: ROLLBACK
+[0m21:15:49.615412 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:49.615412 [debug] [MainThread]: On master: BEGIN
+[0m21:15:49.623730 [debug] [MainThread]: SQL status: BEGIN in 0.004 seconds
+[0m21:15:49.624865 [debug] [MainThread]: On master: COMMIT
+[0m21:15:49.626915 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:49.628915 [debug] [MainThread]: On master: COMMIT
+[0m21:15:49.633847 [debug] [MainThread]: SQL status: COMMIT in 0.002 seconds
+[0m21:15:49.635400 [debug] [MainThread]: On master: Close
+[0m21:15:49.654632 [debug] [Thread-1 (]: Began running node model.framed_obsessions.mart_daily_kpis
+[0m21:15:49.656998 [debug] [Thread-2 (]: Began running node model.framed_obsessions.mart_funnel_daily
+[0m21:15:49.660224 [info ] [Thread-1 (]: 1 of 8 START sql table model mart.mart_daily_kpis .............................. [RUN]
+[0m21:15:49.663749 [info ] [Thread-2 (]: 2 of 8 START sql table model mart.mart_funnel_daily ............................ [RUN]
+[0m21:15:49.666261 [debug] [Thread-1 (]: Acquiring new postgres connection 'model.framed_obsessions.mart_daily_kpis'
+[0m21:15:49.666261 [debug] [Thread-2 (]: Acquiring new postgres connection 'model.framed_obsessions.mart_funnel_daily'
+[0m21:15:49.672456 [debug] [Thread-1 (]: Began compiling node model.framed_obsessions.mart_daily_kpis
+[0m21:15:49.674578 [debug] [Thread-2 (]: Began compiling node model.framed_obsessions.mart_funnel_daily
+[0m21:15:49.722172 [debug] [Thread-1 (]: Writing injected SQL for node "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:49.744788 [debug] [Thread-2 (]: Writing injected SQL for node "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:49.806667 [debug] [Thread-1 (]: Writing injected SQL for node "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:49.826317 [debug] [Thread-2 (]: Writing injected SQL for node "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:49.830435 [debug] [Thread-1 (]: Began executing node model.framed_obsessions.mart_daily_kpis
+[0m21:15:49.868188 [debug] [Thread-2 (]: Began executing node model.framed_obsessions.mart_funnel_daily
+[0m21:15:50.054922 [debug] [Thread-1 (]: Writing runtime sql for node "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.053037 [debug] [Thread-2 (]: Writing runtime sql for node "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.060468 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.062796 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: BEGIN
+[0m21:15:50.064289 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.065881 [debug] [Thread-1 (]: Opening a new connection, currently in state init
+[0m21:15:50.068228 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: BEGIN
+[0m21:15:50.068228 [debug] [Thread-2 (]: Opening a new connection, currently in state init
+[0m21:15:50.119142 [debug] [Thread-2 (]: SQL status: BEGIN in 0.048 seconds
+[0m21:15:50.121179 [debug] [Thread-1 (]: SQL status: BEGIN in 0.055 seconds
+[0m21:15:50.122186 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.124505 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.124505 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_funnel_daily"} */
+
+  
+    
+
+  create  table "framedobsessions"."mart"."mart_funnel_daily__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+with __dbt__cte__int_funnel_steps as (
+-- One row per session with the furthest step it reached.
+--
+-- Steps are made cumulative here rather than read literally off the events: a
+-- session that purchased self-evidently reached checkout, even when the client
+-- never emitted checkout_start. Adding to cart straight from a listing card
+-- does exactly that -- there is no product_view to emit.
+--
+-- Without this the funnel reports more purchases than checkouts and every
+-- conversion rate downstream is nonsense. With it, assert_funnel_is_monotonic
+-- tests something real (a sessionization bug) rather than restating whatever
+-- the browser happened to send.
+select
+    session_key,
+    started_at::date as day,
+    device,
+    utm_source,
+    country,
+    1 as reached_view,
+    case when saw_product or added_to_cart or started_checkout or purchased
+         then 1 else 0 end as reached_product,
+    case when added_to_cart or started_checkout or purchased
+         then 1 else 0 end as reached_cart,
+    case when started_checkout or purchased
+         then 1 else 0 end as reached_checkout,
+    case when purchased
+         then 1 else 0 end as reached_purchase
+from "framedobsessions"."stg"."stg_sessions"
+) select
+    day,
+    device,
+    utm_source,
+    count(*)              as sessions,
+    sum(reached_product)  as viewed_product,
+    sum(reached_cart)     as added_to_cart,
+    sum(reached_checkout) as started_checkout,
+    sum(reached_purchase) as purchased,
+    round(100.0 * sum(reached_purchase) / nullif(count(*), 0), 2) as conversion_pct
+from __dbt__cte__int_funnel_steps
+group by day, device, utm_source
+  );
+  
+[0m21:15:50.124505 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_daily_kpis"} */
+
+  
+    
+
+  create  table "framedobsessions"."mart"."mart_daily_kpis__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+-- The owner's home number. One row per day, present even on zero days, because
+-- a gap in a chart reads as "broken" rather than "quiet".
+with  __dbt__cte__int_order_margin as (
+select
+    o.order_id,
+    o.placed_date,
+    o.is_revenue,
+    sum(i.revenue_cents)  as revenue_cents,
+    sum(i.cogs_cents)     as cogs_cents,
+    sum(i.margin_cents)   as margin_cents,
+    sum(i.qty)            as units
+from "framedobsessions"."stg"."stg_orders" o
+join "framedobsessions"."stg"."stg_order_items" i on i.order_id = o.order_id
+group by o.order_id, o.placed_date, o.is_revenue
+), days as (
+    select generate_series(
+        least(coalesce((select min(placed_date) from "framedobsessions"."stg"."stg_orders"), current_date),
+              current_date - 89),
+        current_date, interval '1 day')::date as day
+)
+select
+    d.day,
+    coalesce(count(o.order_id) filter (where o.is_revenue), 0)   as orders,
+    coalesce(sum(o.total_cents) filter (where o.is_revenue), 0)  as revenue_cents,
+    coalesce(sum(o.refunded_cents), 0)                           as refunded_cents,
+    coalesce(sum(m.margin_cents) filter (where o.is_revenue), 0) as margin_cents,
+    coalesce(sum(m.units) filter (where o.is_revenue), 0)        as units,
+    case when count(o.order_id) filter (where o.is_revenue) > 0
+         then round(sum(o.total_cents) filter (where o.is_revenue)
+                    / count(o.order_id) filter (where o.is_revenue))
+         else 0 end                                              as aov_cents,
+    count(o.order_id) filter (where o.cancelled_at is not null)  as cancellations
+from days d
+left join "framedobsessions"."stg"."stg_orders" o on o.placed_date = d.day
+left join __dbt__cte__int_order_margin m on m.order_id = o.order_id
+group by d.day
+  );
+  
+[0m21:15:50.166573 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.036 seconds
+[0m21:15:50.188771 [debug] [Thread-1 (]: SQL status: SELECT 90 in 0.057 seconds
+[0m21:15:50.209006 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.220357 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.222445 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_funnel_daily"} */
+alter table "framedobsessions"."mart"."mart_funnel_daily" rename to "mart_funnel_daily__dbt_backup"
+[0m21:15:50.224615 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_daily_kpis"} */
+alter table "framedobsessions"."mart"."mart_daily_kpis" rename to "mart_daily_kpis__dbt_backup"
+[0m21:15:50.227975 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.003 seconds
+[0m21:15:50.230586 [debug] [Thread-2 (]: SQL status: ALTER TABLE in 0.005 seconds
+[0m21:15:50.234798 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.246088 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.248154 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_daily_kpis"} */
+alter table "framedobsessions"."mart"."mart_daily_kpis__dbt_tmp" rename to "mart_daily_kpis"
+[0m21:15:50.249860 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_funnel_daily"} */
+alter table "framedobsessions"."mart"."mart_funnel_daily__dbt_tmp" rename to "mart_funnel_daily"
+[0m21:15:50.253857 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.002 seconds
+[0m21:15:50.255786 [debug] [Thread-2 (]: SQL status: ALTER TABLE in 0.004 seconds
+[0m21:15:50.323148 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: COMMIT
+[0m21:15:50.329391 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: COMMIT
+[0m21:15:50.332846 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.331384 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.336328 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: COMMIT
+[0m21:15:50.334555 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: COMMIT
+[0m21:15:50.344967 [debug] [Thread-1 (]: SQL status: COMMIT in 0.006 seconds
+[0m21:15:50.360948 [debug] [Thread-2 (]: SQL status: COMMIT in 0.023 seconds
+[0m21:15:50.364901 [debug] [Thread-1 (]: Applying DROP to: "framedobsessions"."mart"."mart_daily_kpis__dbt_backup"
+[0m21:15:50.373828 [debug] [Thread-2 (]: Applying DROP to: "framedobsessions"."mart"."mart_funnel_daily__dbt_backup"
+[0m21:15:50.392719 [debug] [Thread-1 (]: Using postgres connection "model.framed_obsessions.mart_daily_kpis"
+[0m21:15:50.395180 [debug] [Thread-2 (]: Using postgres connection "model.framed_obsessions.mart_funnel_daily"
+[0m21:15:50.396872 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_daily_kpis"} */
+drop table if exists "framedobsessions"."mart"."mart_daily_kpis__dbt_backup" cascade
+[0m21:15:50.400914 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "model.framed_obsessions.mart_funnel_daily"} */
+drop table if exists "framedobsessions"."mart"."mart_funnel_daily__dbt_backup" cascade
+[0m21:15:50.421753 [debug] [Thread-2 (]: SQL status: DROP TABLE in 0.017 seconds
+[0m21:15:50.424842 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.021 seconds
+[0m21:15:50.437063 [debug] [Thread-2 (]: On model.framed_obsessions.mart_funnel_daily: Close
+[0m21:15:50.444567 [debug] [Thread-1 (]: On model.framed_obsessions.mart_daily_kpis: Close
+[0m21:15:50.460090 [debug] [Thread-2 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015892DF42C0>]}
+[0m21:15:50.462099 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '2bd1b264-1855-4d8e-b766-b7093fb109a1', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001589541D0A0>]}
+[0m21:15:50.464797 [info ] [Thread-2 (]: 2 of 8 OK created sql table model mart.mart_funnel_daily ....................... [[32mSELECT 1[0m in 0.78s]
+[0m21:15:50.469004 [info ] [Thread-1 (]: 1 of 8 OK created sql table model mart.mart_daily_kpis ......................... [[32mSELECT 90[0m in 0.79s]
+[0m21:15:50.471031 [debug] [Thread-2 (]: Finished running node model.framed_obsessions.mart_funnel_daily
+[0m21:15:50.474881 [debug] [Thread-1 (]: Finished running node model.framed_obsessions.mart_daily_kpis
+[0m21:15:50.479931 [debug] [Thread-4 (]: Began running node test.framed_obsessions.assert_funnel_is_monotonic
+[0m21:15:50.482940 [debug] [Thread-3 (]: Began running node test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd
+[0m21:15:50.486611 [debug] [Thread-2 (]: Began running node test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd
+[0m21:15:50.488649 [debug] [Thread-1 (]: Began running node test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed
+[0m21:15:50.491199 [info ] [Thread-4 (]: 3 of 8 START test assert_funnel_is_monotonic ................................... [RUN]
+[0m21:15:50.494185 [info ] [Thread-3 (]: 4 of 8 START test not_null_mart_funnel_daily_sessions .......................... [RUN]
+[0m21:15:50.496393 [info ] [Thread-2 (]: 5 of 8 START test not_null_mart_daily_kpis_day ................................. [RUN]
+[0m21:15:50.498479 [info ] [Thread-1 (]: 6 of 8 START test not_null_mart_daily_kpis_orders .............................. [RUN]
+[0m21:15:50.498479 [debug] [Thread-4 (]: Acquiring new postgres connection 'test.framed_obsessions.assert_funnel_is_monotonic'
+[0m21:15:50.504723 [debug] [Thread-3 (]: Acquiring new postgres connection 'test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd'
+[0m21:15:50.508063 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly model.framed_obsessions.mart_funnel_daily, now test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd)
+[0m21:15:50.511078 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly model.framed_obsessions.mart_daily_kpis, now test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed)
+[0m21:15:50.512872 [debug] [Thread-4 (]: Began compiling node test.framed_obsessions.assert_funnel_is_monotonic
+[0m21:15:50.514789 [debug] [Thread-3 (]: Began compiling node test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd
+[0m21:15:50.517815 [debug] [Thread-2 (]: Began compiling node test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd
+[0m21:15:50.519300 [debug] [Thread-1 (]: Began compiling node test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed
+[0m21:15:50.526336 [debug] [Thread-4 (]: Writing injected SQL for node "test.framed_obsessions.assert_funnel_is_monotonic"
+[0m21:15:50.580872 [debug] [Thread-3 (]: Writing injected SQL for node "test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd"
+[0m21:15:50.604871 [debug] [Thread-2 (]: Writing injected SQL for node "test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd"
+[0m21:15:50.624641 [debug] [Thread-1 (]: Writing injected SQL for node "test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed"
+[0m21:15:50.631872 [debug] [Thread-4 (]: Began executing node test.framed_obsessions.assert_funnel_is_monotonic
+[0m21:15:50.634471 [debug] [Thread-2 (]: Began executing node test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd
+[0m21:15:50.636837 [debug] [Thread-3 (]: Began executing node test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd
+[0m21:15:50.651260 [debug] [Thread-1 (]: Began executing node test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed
+[0m21:15:50.703150 [debug] [Thread-4 (]: Writing runtime sql for node "test.framed_obsessions.assert_funnel_is_monotonic"
+[0m21:15:50.707095 [debug] [Thread-2 (]: Writing runtime sql for node "test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd"
+[0m21:15:50.713788 [debug] [Thread-3 (]: Writing runtime sql for node "test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd"
+[0m21:15:50.720411 [debug] [Thread-1 (]: Writing runtime sql for node "test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed"
+[0m21:15:50.725507 [debug] [Thread-4 (]: Using postgres connection "test.framed_obsessions.assert_funnel_is_monotonic"
+[0m21:15:50.729511 [debug] [Thread-2 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd"
+[0m21:15:50.732586 [debug] [Thread-4 (]: On test.framed_obsessions.assert_funnel_is_monotonic: BEGIN
+[0m21:15:50.736655 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd: BEGIN
+[0m21:15:50.739256 [debug] [Thread-3 (]: Using postgres connection "test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd"
+[0m21:15:50.741915 [debug] [Thread-4 (]: Opening a new connection, currently in state init
+[0m21:15:50.744222 [debug] [Thread-1 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed"
+[0m21:15:50.746872 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m21:15:50.749022 [debug] [Thread-3 (]: On test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd: BEGIN
+[0m21:15:50.752121 [debug] [Thread-1 (]: On test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed: BEGIN
+[0m21:15:50.754623 [debug] [Thread-3 (]: Opening a new connection, currently in state init
+[0m21:15:50.757925 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m21:15:50.806618 [debug] [Thread-2 (]: SQL status: BEGIN in 0.060 seconds
+[0m21:15:50.808780 [debug] [Thread-4 (]: SQL status: BEGIN in 0.067 seconds
+[0m21:15:50.811369 [debug] [Thread-2 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd"
+[0m21:15:50.813925 [debug] [Thread-4 (]: Using postgres connection "test.framed_obsessions.assert_funnel_is_monotonic"
+[0m21:15:50.816571 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select day
+from "framedobsessions"."mart"."mart_daily_kpis"
+where day is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:50.818740 [debug] [Thread-4 (]: On test.framed_obsessions.assert_funnel_is_monotonic: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.assert_funnel_is_monotonic"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  -- Each funnel step must be a subset of the one before it. A session that
+-- purchased without starting checkout means the sessionization or the event
+-- taxonomy is broken, and every conversion number downstream is wrong.
+select
+    day, device, utm_source,
+    sessions, viewed_product, added_to_cart, started_checkout, purchased
+from "framedobsessions"."mart"."mart_funnel_daily"
+where viewed_product    > sessions
+   or added_to_cart     > viewed_product
+   or started_checkout  > added_to_cart
+   or purchased         > started_checkout
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:50.818740 [debug] [Thread-3 (]: SQL status: BEGIN in 0.066 seconds
+[0m21:15:50.823924 [debug] [Thread-3 (]: Using postgres connection "test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd"
+[0m21:15:50.826396 [debug] [Thread-1 (]: SQL status: BEGIN in 0.068 seconds
+[0m21:15:50.827883 [debug] [Thread-3 (]: On test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select sessions
+from "framedobsessions"."mart"."mart_funnel_daily"
+where sessions is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:50.830470 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.007 seconds
+[0m21:15:50.832181 [debug] [Thread-4 (]: SQL status: SELECT 1 in 0.008 seconds
+[0m21:15:50.834144 [debug] [Thread-1 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed"
+[0m21:15:50.846516 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd: ROLLBACK
+[0m21:15:50.846516 [debug] [Thread-3 (]: SQL status: SELECT 1 in 0.013 seconds
+[0m21:15:50.855504 [debug] [Thread-4 (]: On test.framed_obsessions.assert_funnel_is_monotonic: ROLLBACK
+[0m21:15:50.857585 [debug] [Thread-1 (]: On test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select orders
+from "framedobsessions"."mart"."mart_daily_kpis"
+where orders is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:50.863697 [debug] [Thread-3 (]: On test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd: ROLLBACK
+[0m21:15:50.864866 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd: Close
+[0m21:15:50.870238 [debug] [Thread-4 (]: On test.framed_obsessions.assert_funnel_is_monotonic: Close
+[0m21:15:50.870238 [info ] [Thread-2 (]: 5 of 8 PASS not_null_mart_daily_kpis_day ....................................... [[32mPASS[0m in 0.36s]
+[0m21:15:50.873795 [debug] [Thread-3 (]: On test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd: Close
+[0m21:15:50.874847 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.008 seconds
+[0m21:15:50.874847 [debug] [Thread-2 (]: Finished running node test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd
+[0m21:15:50.880757 [info ] [Thread-4 (]: 3 of 8 PASS assert_funnel_is_monotonic ......................................... [[32mPASS[0m in 0.38s]
+[0m21:15:50.889833 [debug] [Thread-1 (]: On test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed: ROLLBACK
+[0m21:15:50.892402 [info ] [Thread-3 (]: 4 of 8 PASS not_null_mart_funnel_daily_sessions ................................ [[32mPASS[0m in 0.39s]
+[0m21:15:50.896347 [debug] [Thread-2 (]: Began running node test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c
+[0m21:15:50.897382 [debug] [Thread-4 (]: Finished running node test.framed_obsessions.assert_funnel_is_monotonic
+[0m21:15:50.897382 [debug] [Thread-3 (]: Finished running node test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd
+[0m21:15:50.903815 [debug] [Thread-1 (]: On test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed: Close
+[0m21:15:50.904943 [info ] [Thread-2 (]: 7 of 8 START test not_null_mart_daily_kpis_revenue_cents ....................... [RUN]
+[0m21:15:50.908397 [debug] [Thread-4 (]: Began running node test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284
+[0m21:15:50.911967 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.framed_obsessions.not_null_mart_daily_kpis_day.d7ced9c4fd, now test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c)
+[0m21:15:50.914861 [info ] [Thread-1 (]: 6 of 8 PASS not_null_mart_daily_kpis_orders .................................... [[32mPASS[0m in 0.40s]
+[0m21:15:50.916861 [info ] [Thread-4 (]: 8 of 8 START test unique_mart_daily_kpis_day ................................... [RUN]
+[0m21:15:50.918857 [debug] [Thread-2 (]: Began compiling node test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c
+[0m21:15:50.921854 [debug] [Thread-1 (]: Finished running node test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed
+[0m21:15:50.924189 [debug] [Thread-4 (]: Re-using an available connection from the pool (formerly test.framed_obsessions.assert_funnel_is_monotonic, now test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284)
+[0m21:15:50.945506 [debug] [Thread-2 (]: Writing injected SQL for node "test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c"
+[0m21:15:50.947499 [debug] [Thread-4 (]: Began compiling node test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284
+[0m21:15:50.976435 [debug] [Thread-4 (]: Writing injected SQL for node "test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284"
+[0m21:15:50.982324 [debug] [Thread-2 (]: Began executing node test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c
+[0m21:15:50.988953 [debug] [Thread-2 (]: Writing runtime sql for node "test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c"
+[0m21:15:50.992538 [debug] [Thread-4 (]: Began executing node test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284
+[0m21:15:50.999629 [debug] [Thread-4 (]: Writing runtime sql for node "test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284"
+[0m21:15:50.999629 [debug] [Thread-2 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c"
+[0m21:15:51.003785 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c: BEGIN
+[0m21:15:51.004842 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m21:15:51.004842 [debug] [Thread-4 (]: Using postgres connection "test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284"
+[0m21:15:51.009219 [debug] [Thread-4 (]: On test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284: BEGIN
+[0m21:15:51.012056 [debug] [Thread-4 (]: Opening a new connection, currently in state closed
+[0m21:15:51.069073 [debug] [Thread-4 (]: SQL status: BEGIN in 0.057 seconds
+[0m21:15:51.070181 [debug] [Thread-2 (]: SQL status: BEGIN in 0.065 seconds
+[0m21:15:51.072201 [debug] [Thread-4 (]: Using postgres connection "test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284"
+[0m21:15:51.074169 [debug] [Thread-2 (]: Using postgres connection "test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c"
+[0m21:15:51.076006 [debug] [Thread-4 (]: On test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+select
+    day as unique_field,
+    count(*) as n_records
+
+from "framedobsessions"."mart"."mart_daily_kpis"
+where day is not null
+group by day
+having count(*) > 1
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:51.077722 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "framed_obsessions", "target_name": "dev", "node_id": "test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select revenue_cents
+from "framedobsessions"."mart"."mart_daily_kpis"
+where revenue_cents is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m21:15:51.083770 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.004 seconds
+[0m21:15:51.084849 [debug] [Thread-4 (]: SQL status: SELECT 1 in 0.007 seconds
+[0m21:15:51.090398 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c: ROLLBACK
+[0m21:15:51.095673 [debug] [Thread-4 (]: On test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284: ROLLBACK
+[0m21:15:51.100001 [debug] [Thread-4 (]: On test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284: Close
+[0m21:15:51.100998 [debug] [Thread-2 (]: On test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c: Close
+[0m21:15:51.104721 [info ] [Thread-4 (]: 8 of 8 PASS unique_mart_daily_kpis_day ......................................... [[32mPASS[0m in 0.18s]
+[0m21:15:51.106742 [info ] [Thread-2 (]: 7 of 8 PASS not_null_mart_daily_kpis_revenue_cents ............................. [[32mPASS[0m in 0.20s]
+[0m21:15:51.110578 [debug] [Thread-4 (]: Finished running node test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284
+[0m21:15:51.113947 [debug] [Thread-2 (]: Finished running node test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c
+[0m21:15:51.119663 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:51.121660 [debug] [MainThread]: On master: BEGIN
+[0m21:15:51.123239 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m21:15:51.164635 [debug] [MainThread]: SQL status: BEGIN in 0.042 seconds
+[0m21:15:51.166224 [debug] [MainThread]: On master: COMMIT
+[0m21:15:51.168254 [debug] [MainThread]: Using postgres connection "master"
+[0m21:15:51.170268 [debug] [MainThread]: On master: COMMIT
+[0m21:15:51.172494 [debug] [MainThread]: SQL status: COMMIT in 0.002 seconds
+[0m21:15:51.174675 [debug] [MainThread]: On master: Close
+[0m21:15:51.177694 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m21:15:51.179690 [debug] [MainThread]: Connection 'list_framedobsessions' was properly closed.
+[0m21:15:51.180694 [debug] [MainThread]: Connection 'list_framedobsessions_mart' was properly closed.
+[0m21:15:51.182224 [debug] [MainThread]: Connection 'list_framedobsessions_stg' was properly closed.
+[0m21:15:51.182224 [debug] [MainThread]: Connection 'test.framed_obsessions.not_null_mart_daily_kpis_orders.e08f1e18ed' was properly closed.
+[0m21:15:51.184848 [debug] [MainThread]: Connection 'test.framed_obsessions.not_null_mart_daily_kpis_revenue_cents.e3ed71277c' was properly closed.
+[0m21:15:51.185825 [debug] [MainThread]: Connection 'test.framed_obsessions.unique_mart_daily_kpis_day.8296c0e284' was properly closed.
+[0m21:15:51.186523 [debug] [MainThread]: Connection 'test.framed_obsessions.not_null_mart_funnel_daily_sessions.ca216ab4fd' was properly closed.
+[0m21:15:51.188560 [info ] [MainThread]: 
+[0m21:15:51.190303 [info ] [MainThread]: Finished running 2 table models, 6 data tests in 0 hours 0 minutes and 2.26 seconds (2.26s).
+[0m21:15:51.198336 [debug] [MainThread]: Command end result
+[0m21:15:51.368446 [debug] [MainThread]: Wrote artifact WritableManifest to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\manifest.json
+[0m21:15:51.381202 [debug] [MainThread]: Wrote artifact SemanticManifest to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\semantic_manifest.json
+[0m21:15:51.395608 [debug] [MainThread]: Wrote artifact OsiDocument to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\osi_document.json
+[0m21:15:51.428085 [debug] [MainThread]: Wrote artifact RunExecutionResult to C:\downloadsssssss\carswithframes\carframe_store\dbt\target\run_results.json
+[0m21:15:51.428085 [info ] [MainThread]: 
+[0m21:15:51.430096 [info ] [MainThread]: [32mCompleted successfully[0m
+[0m21:15:51.433657 [info ] [MainThread]: 
+[0m21:15:51.435925 [info ] [MainThread]: Done. PASS=8 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=8
+[0m21:15:51.440937 [debug] [MainThread]: Command `dbt build` succeeded at 21:15:51.439935 after 7.88 seconds
+[0m21:15:51.443662 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000158928111C0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015895C4D2B0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000015892877260>]}
+[0m21:15:51.445887 [debug] [MainThread]: Flushing usage events
+[0m21:15:52.824937 [debug] [MainThread]: An error was encountered while trying to flush usage events

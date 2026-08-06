@@ -56,6 +56,7 @@ STOCK_BELOW = Gauge("fo_components_below_threshold", "Components at or under the
 PAYMENT_FAILED = Gauge("fo_payment_failures_1h", "Failed payments in the last hour")
 ABANDONED_VALUE = Gauge("fo_abandoned_cart_cents_24h", "Value of carts abandoned in the last 24h")
 LEDGER_DRIFT = Gauge("fo_ledger_drift_units", "Components whose cached balance disagrees with the ledger")
+MART_BUILT_AT = Gauge("fo_mart_last_build_timestamp", "Unix time of the last successful dbt build")
 
 
 def client() -> redis.Redis:
@@ -283,6 +284,15 @@ def exporter() -> None:
             STOCK_BELOW.set(row["low_stock"])
             PAYMENT_FAILED.set(row["payment_failures"])
             ABANDONED_VALUE.set(row["abandoned"])
+
+            # Mart freshness has an SLO (15 minutes), so it needs a metric.
+            with tx(Role.ETL) as cur:
+                cur.execute(
+                    """select extract(epoch from max(run_at)) as built_at
+                         from meta.dbt_runs where status = 'success'"""
+                )
+                built = cur.fetchone()["built_at"]
+            MART_BUILT_AT.set(float(built) if built else 0)
         except Exception:                                # noqa: BLE001
             log.exception("kpi export failed")
         try:

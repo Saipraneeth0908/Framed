@@ -5,15 +5,107 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  # Every role points at the ephemeral service container. Nothing here is a
+  # secret: the database exists for the length of one job.
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/framedobsessions?sslmode=disable
+  STORE_DATABASE_URL: postgres://store_app:store_app_dev@localhost:5432/framedobsessions?sslmode=disable
+  ADMIN_DATABASE_URL: postgres://admin_app:admin_app_dev@localhost:5432/framedobsessions?sslmode=disable
+  INGEST_DATABASE_URL: postgres://ingest:ingest_dev@localhost:5432/framedobsessions?sslmode=disable
+  ETL_DATABASE_URL: postgres://etl:etl_dev@localhost:5432/framedobsessions?sslmode=disable
+  REDIS_URL: redis://localhost:6379/0
+  FLASK_SECRET_KEY: ci-storefront-secret
+  ADMIN_SECRET_KEY: ci-admin-secret
+  ADMIN_TOTP_KEY: dGVzdC10b3RwLWtleS0zMi1ieXRlcy1sb25nLXh4eHg=
+  EVENT_SALT_SEED: ci-salt-seed
+  FO_INSECURE_COOKIES: "1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: framedobsessions
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d framedobsessions"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: ruff check .
-      - run: pytest
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install dbt-postgres==1.9.0
+
+      - name: Install dbmate
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/dbmate \
+            https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          sudo chmod +x /usr/local/bin/dbmate
+
+      - name: Lint
+        run: ruff check .
+
+      # The whole schema, from nothing, on every run. A migration that only
+      # works against a database that already exists is not a migration.
+      - name: Migrate
+        run: dbmate --migrations-dir db/migrations --no-dump-schema up
+
+      - name: Roll every migration back and forward again
+        run: |
+          for _ in db/migrations/*.sql; do
+            dbmate --migrations-dir db/migrations --no-dump-schema down
+          done
+          dbmate --migrations-dir db/migrations --no-dump-schema up
+
+      - name: Seed catalog
+        run: python -m scripts.seed_catalog
+
+      # Includes the deny-by-default check: every admin route must declare a
+      # permission or the build fails.
+      - name: Tests
+        run: pytest -q
+
+      - name: Build and test the warehouse
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: etl
+          PGPASSWORD: etl_dev
+          PGDATABASE: framedobsessions
+          DBT_PROFILES_DIR: dbt
+        run: cd dbt && dbt build
+
+      - name: Prove the warehouse build is idempotent
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: etl
+          PGPASSWORD: etl_dev
+          PGDATABASE: framedobsessions
+          DBT_PROFILES_DIR: dbt
+        run: cd dbt && dbt build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the application image
+        run: docker build -f deploy/Dockerfile --target app -t framedobsessions:ci .

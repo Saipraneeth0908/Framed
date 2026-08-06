@@ -12,9 +12,16 @@ from admin.rbac import ROLE_PERMS, Perm, permissions_for
 from db.conn import Role, tx
 
 # Routes that legitimately carry no permission, each for a stated reason.
+#   auth.*   -- you cannot require a session to create one
+#   healthz  -- the orchestrator has no credentials
+#   readyz   -- same, and it must answer while the database is down
+#   static   -- CSS
+#   prometheus_metrics -- Prometheus cannot log in. It exposes route names and
+#       latencies, never records, and deploy/Caddyfile refuses it from the
+#       internet so only the scrape network reaches it.
 PUBLIC_ENDPOINTS = {
     "auth.login", "auth.totp_challenge", "auth.enroll", "auth.logout", "auth.change_password",
-    "healthz", "readyz", "static",
+    "healthz", "readyz", "static", "prometheus_metrics",
 }
 
 
