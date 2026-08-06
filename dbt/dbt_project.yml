@@ -1,0 +1,28 @@
+name: framed_obsessions
+version: "1.0.0"
+config-version: 2
+profile: framed_obsessions
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  framed_obsessions:
+    staging:
+      +schema: stg
+      +materialized: view
+    intermediate:
+      +schema: stg
+      +materialized: ephemeral
+    marts:
+      +schema: mart
+      +materialized: table
+
+vars:
+  # A beacon can land minutes after the event it describes; incremental models
+  # re-scan this window so late arrivals are not silently dropped.
+  late_arrival_window: "3 hours"
+  session_gap: "30 minutes"

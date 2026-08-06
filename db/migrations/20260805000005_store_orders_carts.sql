@@ -243,6 +243,9 @@ grant usage, select on all sequences in schema store to store_app;
 grant select, insert, update, delete on all tables in schema store to admin_app;
 grant usage, select on all sequences in schema store to admin_app;
 grant select on all tables in schema store to etl;
+-- The worker's abandoned-cart sweep is the one thing etl writes in store, and
+-- it only ever sets these two columns.
+grant update (state, abandoned_at) on store.carts to etl;
 
 -- migrate:down
 drop trigger if exists t_rollup_production on store.order_items;

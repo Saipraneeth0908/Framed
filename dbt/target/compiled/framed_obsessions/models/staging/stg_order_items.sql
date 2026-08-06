@@ -1,0 +1,21 @@
+select
+    oi.id                       as order_item_id,
+    oi.order_id,
+    oi.variant_id,
+    oi.product_id,
+    oi.sku_snapshot             as sku,
+    oi.name_snapshot            as product_name,
+    oi.attrs_snapshot ->> 'frame'        as frame,
+    oi.attrs_snapshot ->> 'size'         as size,
+    oi.attrs_snapshot ->> 'poster_theme' as poster_theme,
+    oi.qty,
+    oi.refunded_qty,
+    oi.unit_price_cents,
+    oi.cost_cents,
+    oi.qty * oi.unit_price_cents                        as revenue_cents,
+    oi.qty * oi.cost_cents                              as cogs_cents,
+    oi.qty * (oi.unit_price_cents - oi.cost_cents)      as margin_cents,
+    oi.production_status::text  as production_status,
+    oi.station_started_at,
+    oi.packed_at
+from "framedobsessions"."store"."order_items" oi

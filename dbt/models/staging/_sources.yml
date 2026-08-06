@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: Append-only landing zone. Contains no customer PII by construction.
+    tables:
+      - name: events
+        description: Behavioural events from the collector.
+        loaded_at_field: received_at
+        freshness:
+          warn_after: {count: 2, period: hour}
+          error_after: {count: 12, period: hour}
+      - name: domain_events
+      - name: stripe_txns
+
+  - name: store
+    schema: store
+    tables:
+      - name: orders
+      - name: order_items
+      - name: carts
+      - name: cart_items
+      - name: customers
+      - name: products
+      - name: variants
+
+  - name: ops
+    schema: ops
+    tables:
+      - name: components
+      - name: variant_components
+      - name: inventory_ledger
+      - name: audit_log

@@ -1,0 +1,88 @@
+version: 2
+
+models:
+  - name: stg_events
+    columns:
+      - name: event_id
+        tests: [not_null]
+      - name: event_name
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                  values: [page_view, product_view, search, search_zero_results, filter_apply,
+                           config_change, add_to_cart, remove_from_cart, cart_view,
+                           checkout_start, checkout_step, checkout_error, purchase,
+                           wishlist_add, wall_preview_open, newsletter_submit, outbound_click]
+      - name: occurred_at
+        tests: [not_null]
+      - name: visitor_key
+        tests: [not_null]
+
+  - name: stg_sessions
+    columns:
+      - name: session_key
+        tests: [unique, not_null]
+      - name: duration_seconds
+
+  - name: stg_orders
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: payment_status
+        tests:
+          - accepted_values:
+              arguments:
+                  values: [unpaid, authorized, paid, partially_refunded, refunded, failed]
+      - name: fulfilment_status
+        tests:
+          - accepted_values:
+              arguments:
+                  values: [unfulfilled, partially_fulfilled, fulfilled, in_transit, delivered, returned]
+      - name: total_cents
+        tests: [not_null]
+
+  - name: stg_order_items
+    columns:
+      - name: order_item_id
+        tests: [unique, not_null]
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: production_status
+        tests:
+          - accepted_values:
+              arguments:
+                  values: [queued, blocked, printing, printed, mounting, framing, qc,
+                           reprint, packed, cancelled]
+      - name: qty
+
+  - name: stg_carts
+    columns:
+      - name: cart_id
+        tests: [unique, not_null]
+      - name: state
+        tests:
+          - accepted_values:
+              arguments:
+                values: [active, converted, abandoned, expired]
+
+  - name: stg_ledger
+    columns:
+      - name: ledger_id
+        tests: [unique, not_null]
+      - name: reason
+        tests:
+          - accepted_values:
+              arguments:
+                  values: [receive, consume, damage, return, correction, cancel_restock,
+                           reserve, unreserve]
+
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]

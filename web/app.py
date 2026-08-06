@@ -95,7 +95,13 @@ def cart_init():
 @app.context_processor
 def inject_site_context():
     count = sum(parse_quantity(i.get("qty", 0), default=0) for i in getattr(g, "_cart_items", cart_items()))
-    return {"cart_count": count, "categories": load_categories()}
+    return {
+        "cart_count": count,
+        "categories": load_categories(),
+        # Unset means the beacon is not rendered at all -- the storefront's only
+        # knowledge of analytics is this one URL.
+        "collector_url": os.environ.get("COLLECTOR_URL", ""),
+    }
 
 
 @app.before_request

@@ -60,6 +60,11 @@ grant usage on schema mart  to etl, admin_app, bi_reader;
 grant usage on schema meta  to etl, admin_app;
 
 grant create on schema stg, mart, meta to etl;   -- dbt materialises here
+-- dbt issues CREATE SCHEMA IF NOT EXISTS for its target on every run, which
+-- needs database-level CREATE even when the schema already exists. TEMPORARY is
+-- for dbt's incremental strategy and for the worker's COPY-into-temp loader --
+-- `revoke all on database` took it away along with everything else.
+grant create, temporary on database framedobsessions to etl;
 
 -- The storefront can never see ops. This is the whole point of the split:
 -- a SQL-injection hole in web/ cannot read ops.users, ops.audit_log or PII.

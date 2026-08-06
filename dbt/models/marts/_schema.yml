@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: mart_daily_kpis
+    description: One row per calendar day. Zero days are present, not missing.
+    columns:
+      - name: day
+        tests: [unique, not_null]
+      - name: revenue_cents
+        tests:
+          - not_null
+      - name: orders
+        tests: [not_null]
+
+  - name: mart_funnel_daily
+    columns:
+      - name: sessions
+        tests: [not_null]
+      - name: conversion_pct
+
+  - name: mart_cart_abandonment
+    columns:
+      - name: outcome
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                  values: [converted, never_added, left_at_checkout, left_with_cart, active]
+
+  - name: mart_product_performance
+    columns:
+      - name: product_id
+        tests: [not_null]
+
+  - name: mart_component_cover
+    columns:
+      - name: component_id
+        tests: [unique, not_null]
+      - name: available
+        tests: [not_null]
+
+  - name: mart_customer_cohorts
+    columns:
+      - name: cohort_month
+        tests: [unique, not_null]
+
+  - name: mart_traffic_daily
+    columns:
+      - name: bounce_pct

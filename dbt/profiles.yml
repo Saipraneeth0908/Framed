@@ -1,0 +1,16 @@
+# dbt reads this from DBT_PROFILES_DIR (set to dbt/ by scripts and CI).
+# Credentials come from the environment; nothing secret is committed.
+framed_obsessions:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PGHOST', 'localhost') }}"
+      port: "{{ env_var('PGPORT', '5433') | int }}"
+      user: "{{ env_var('PGUSER', 'etl') }}"
+      password: "{{ env_var('PGPASSWORD', 'etl_dev') }}"
+      dbname: "{{ env_var('PGDATABASE', 'framedobsessions') }}"
+      schema: stg
+      threads: 4
+      keepalives_idle: 0
+      search_path: "stg,mart,meta,store,ops,raw,public"

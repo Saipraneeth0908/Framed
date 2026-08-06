@@ -44,8 +44,7 @@ begin
         part,
         (m + (i || ' months')::interval)::date,
         (m + ((i + 1) || ' months')::interval)::date);
-      execute format('grant insert, select on raw.%I to ingest', part);
-      execute format('grant select on raw.%I to etl', part);
+      execute format('grant insert, select on raw.%I to ingest, etl', part);
       made := made + 1;
     end if;
   end loop;
@@ -147,8 +146,11 @@ create table meta.dq_results (
 );
 create index dq_results_time on meta.dq_results (run_at desc, status);
 
-grant insert, select on raw.events to ingest;
-grant select on raw.events, raw.outbox, raw.domain_events, raw.stripe_txns to etl;
+-- Today the loader (etl) is the only writer: the collector buffers to Redis and
+-- never opens a Postgres connection. `ingest` keeps the grant so the Tier-2
+-- direct-write collector is a config change rather than a migration.
+grant insert, select on raw.events to ingest, etl;
+grant select on raw.outbox, raw.domain_events, raw.stripe_txns to etl;
 grant insert on raw.outbox to store_app, admin_app;
 grant usage, select on sequence raw.outbox_id_seq to store_app, admin_app;
 grant select, update on raw.outbox to etl;
