@@ -2,6 +2,9 @@
 {% from "_icons.html" import icon %}
 {% block actions %}
   <a class="btn btn--sm" href="{{ url_for('catalog.export_csv') }}">{{ icon('download', 16) }} CSV</a>
+  {% if can(Perm.PRICE_EDIT) %}
+    <a class="btn btn--sm" href="{{ url_for('catalog.import_form') }}">{{ icon('arrow', 16) }} Bulk prices</a>
+  {% endif %}
 {% endblock %}
 {% block content %}
 

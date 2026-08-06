@@ -440,6 +440,77 @@ def update_variant(variant_id: int, price_cents: int, sale_cents: int | None, st
         )
 
 
+def bulk_update_variants(rows: list[dict], actor_id: int) -> dict:
+    """Apply price/status changes keyed by SKU.
+
+    Used by both the CSV import and the bulk-edit form. Unknown SKUs are
+    reported rather than ignored: a silent no-op on a typo'd SKU is how a price
+    change goes out half-applied.
+    """
+    applied, unknown, rejected = 0, [], []
+    with tx(ADMIN, actor_id=actor_id) as cur:
+        for row in rows:
+            sku = (row.get("sku") or "").strip()
+            if not sku:
+                continue
+            sets, params = [], {"sku": sku}
+            if row.get("price_cents") is not None:
+                if row["price_cents"] < 0:
+                    rejected.append(f"{sku}: negative price")
+                    continue
+                sets.append("price_cents = %(price_cents)s")
+                params["price_cents"] = row["price_cents"]
+            if "sale_price_cents" in row:
+                sets.append("sale_price_cents = %(sale_price_cents)s")
+                params["sale_price_cents"] = row["sale_price_cents"]
+            if row.get("status"):
+                if row["status"] not in {"draft", "active", "archived"}:
+                    rejected.append(f"{sku}: unknown status {row['status']}")
+                    continue
+                sets.append("status = %(status)s::product_status")
+                params["status"] = row["status"]
+            if not sets:
+                continue
+            cur.execute(
+                f"update store.variants set {', '.join(sets)} "
+                "where sku = %(sku)s and archived_at is null returning id",
+                params,
+            )
+            if cur.fetchone():
+                applied += 1
+            else:
+                unknown.append(sku)
+    return {"applied": applied, "unknown": unknown, "rejected": rejected}
+
+
+def bulk_update_products(product_ids: list[int], fields: dict, actor_id: int) -> int:
+    allowed = {"status", "featured", "category"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v not in (None, "")}
+    if not sets or not product_ids:
+        return 0
+    assignments = ", ".join(
+        f"{k} = %({k})s::product_status" if k == "status" else f"{k} = %({k})s" for k in sets
+    )
+    with tx(ADMIN, actor_id=actor_id) as cur:
+        cur.execute(
+            f"update store.products set {assignments} where id = any(%(ids)s) and archived_at is null",
+            {**sets, "ids": product_ids},
+        )
+        return cur.rowcount
+
+
+def variants_for_export() -> list[dict]:
+    with tx(ADMIN) as cur:
+        cur.execute(
+            """select v.sku, p.slug::text as product_slug, p.name as product_name,
+                      v.frame, v.size, v.price_cents, v.sale_price_cents,
+                      v.status::text as status
+                 from store.variants v join store.products p on p.id = v.product_id
+                where v.archived_at is null order by p.position, v.position"""
+        )
+        return cur.fetchall()
+
+
 def archive_product(product_id: int, actor_id: int) -> None:
     """Archive, never delete: orders reference these rows and reports need them."""
     with tx(ADMIN, actor_id=actor_id) as cur:

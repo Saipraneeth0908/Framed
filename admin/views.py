@@ -297,6 +297,75 @@ def export_csv():
     return _csv_response(repo.products(include_archived=True), "catalog.csv")
 
 
+@catalog.get("/variants.csv")
+@require(Perm.PRODUCT_VIEW)
+def export_variants_csv():
+    """The round-trip file: export, edit prices in a spreadsheet, import back."""
+    return _csv_response(repo.variants_for_export(), "variants.csv")
+
+
+@catalog.get("/import")
+@require(Perm.PRICE_EDIT)
+def import_form():
+    return render_template("import.html", result=None, page_title="Bulk price import")
+
+
+@catalog.post("/import")
+@require(Perm.PRICE_EDIT)
+def import_csv():
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        abort(400, description="Choose a CSV file first.")
+
+    try:
+        text = upload.read().decode("utf-8-sig")
+    except UnicodeDecodeError:
+        abort(400, description="That file is not UTF-8. Re-export it as CSV UTF-8.")
+
+    rows = []
+    for record in csv.DictReader(io.StringIO(text)):
+        row = {"sku": (record.get("sku") or "").strip()}
+        for source, target in (("price_cents", "price_cents"), ("sale_price_cents", "sale_price_cents")):
+            raw = (record.get(source) or "").strip()
+            if raw == "":
+                continue
+            try:
+                row[target] = int(raw)
+            except ValueError:
+                # A spreadsheet will happily hand back "116.00" for a cents
+                # column; accept it rather than rejecting the whole file.
+                try:
+                    row[target] = round(float(raw))
+                except ValueError:
+                    row[target] = None
+        if (record.get("status") or "").strip():
+            row["status"] = record["status"].strip()
+        rows.append(row)
+
+    if len(rows) > 5000:
+        abort(400, description="That is more than 5000 rows; split the file.")
+
+    result = repo.bulk_update_variants(rows, _actor())
+    result["submitted"] = len(rows)
+    log.info("bulk import by uid=%s: %s", _actor(), result)
+    return render_template("import.html", result=result, page_title="Bulk price import")
+
+
+@catalog.post("/bulk")
+@require(Perm.PRODUCT_EDIT)
+def bulk_products():
+    ids = [int(v) for v in request.form.getlist("product_id") if v.isdigit()]
+    changed = repo.bulk_update_products(
+        ids,
+        {"status": request.form.get("status"),
+         "category": request.form.get("category"),
+         "featured": True if request.form.get("featured") == "on" else None},
+        _actor(),
+    )
+    log.info("bulk product edit by uid=%s touched %d rows", _actor(), changed)
+    return redirect(url_for("catalog.products"))
+
+
 # --------------------------------------------------------------------------- #
 # People
 # --------------------------------------------------------------------------- #

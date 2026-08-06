@@ -29,13 +29,25 @@ _FALLBACK = "postgres://postgres:postgres@localhost:5433/framedobsessions?sslmod
 
 
 def _url(role: str) -> str:
-    var = f"{role}_DATABASE_URL" if role else "DATABASE_URL"
-    url = os.environ.get(var) or os.environ.get("DATABASE_URL")
+    """Resolve the connection string for a role.
+
+    A missing role URL must NOT quietly fall back to DATABASE_URL. That variable
+    holds superuser credentials, so the fallback would hand the storefront full
+    access to ops and silently undo the entire isolation model -- the failure
+    mode being an app that works perfectly until someone reads the grants and
+    discovers they were never in force.
+    """
+    if not role:
+        # Role.SUPER: migrations, seeds and tests. Dev convenience only --
+        # deploy/docker-compose.yml maps Postgres to 5433.
+        return os.environ.get("DATABASE_URL") or _FALLBACK
+    var = f"{role}_DATABASE_URL"
+    url = os.environ.get(var)
     if not url:
-        # Dev convenience only: deploy/docker-compose.yml maps Postgres to 5433.
-        # Every container in deploy/ gets an explicit URL, so this never fires
-        # in a deployed process.
-        url = _FALLBACK
+        raise RuntimeError(
+            f"{var} is not set. Each process connects as exactly one role; "
+            f"falling back to DATABASE_URL would give it superuser access."
+        )
     return url
 
 
