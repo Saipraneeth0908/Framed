@@ -1,0 +1,92 @@
+{% extends "_insights_base.html" %}
+{% from "_charts.html" import ranked, timeseries, dur %}
+{% block analytics %}
+
+<div class="panel">
+  <div class="panel__body">
+    {{ timeseries(trend, 'day', 'sessions', 'Sessions per day') }}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Where visitors came from</h2></div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Source</th><th>Referrer</th><th class="right">Sessions</th>
+                   <th class="right">Purchases</th><th class="right">Converts</th>
+                   <th class="right">Engaged</th><th class="right">Revenue</th></tr></thead>
+        <tbody>
+          {% for s in sources %}
+          <tr>
+            <td data-label="Source">{{ s.source }}</td>
+            <td data-label="Referrer"><span class="mono">{{ s.referrer or '—' }}</span></td>
+            <td data-label="Sessions" class="right num">{{ s.sessions }}</td>
+            <td data-label="Purchases" class="right num">{{ s.purchases }}</td>
+            <td data-label="Converts" class="right num">{{ s.conversion_pct or 0 }}%</td>
+            <td data-label="Engaged" class="right num">{{ dur(s.avg_engaged_seconds or 0) }}</td>
+            <td data-label="Revenue" class="right money">{{ s.revenue_cents|money }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty">
+            <p class="empty__title">No traffic recorded</p>
+            <p>Sources come from utm parameters and the referring host.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(landings, 'landing_path', 'sessions', 'Landing pages', slot=1,
+                secondary_key='bounce_pct', secondary_label='bounce %', limit=10) }}
+      <p class="insight">Right-hand figure is bounce rate. A popular landing page with a high bounce is the cheapest thing to fix.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(searches, 'term', 'searches', 'What people searched for', slot=4,
+                secondary_key='zero_results', secondary_label='zero-result', limit=12) }}
+      <p class="insight">Right-hand figure counts searches that returned nothing — demand you are not meeting.</p>
+    </div>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Lost demand</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">searches with no results, and products viewed while unbuildable</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Signal</th><th>Kind</th><th class="right">Occurrences</th><th class="right">Last seen</th></tr></thead>
+        <tbody>
+          {% for row in lost %}
+          <tr>
+            <td data-label="Signal">{{ row.signal }}</td>
+            <td data-label="Kind"><span class="chip {{ 'chip--warn' if row.kind == 'viewed_while_unbuildable' else '' }}">{{ row.kind|replace('_', ' ') }}</span></td>
+            <td data-label="Occurrences" class="right num">{{ row.occurrences }}</td>
+            <td data-label="Last seen" class="right">{{ row.last_seen|ago }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">No unmet demand recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel__body">
+      <p class="insight">
+        <strong>zero result search</strong> is a catalog gap — someone wanted something you do not stock.
+        <strong>viewed while unbuildable</strong> is a stock gap — they wanted something you sell but
+        could not have made that day.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

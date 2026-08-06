@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+
+{#
+  Shared shell for every analytics page: one tab row, one date-window control,
+  and one honest statement of where the numbers came from.
+
+  Freshness is stated on every page on purpose. A dashboard that silently shows
+  stale marts is worse than one that shows nothing, because the owner acts on it.
+#}
+
+{% set tabs = [
+  ('insights.analytics',    'Overview'),
+  ('insights.behaviour',    'Behaviour'),
+  ('insights.products_analytics', 'Products'),
+  ('insights.abandonment',  'Abandonment'),
+  ('insights.acquisition',  'Acquisition'),
+  ('insights.embedded_dashboards', 'Metabase'),
+] %}
+
+{% block actions %}
+  <nav class="tabs" aria-label="Date range">
+    {% for d, label in [(7, '7d'), (30, '30d'), (90, '90d'), (365, '1y')] %}
+      <a href="{{ url_for(request.endpoint, days=d, **request.view_args or {}) }}"
+         {% if days == d %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+{% endblock %}
+
+{% block content %}
+<nav class="tabs" aria-label="Analytics sections">
+  {% for endpoint, label in tabs %}
+    <a href="{{ url_for(endpoint, days=days) }}" {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if marts_missing %}
+  <div class="alert alert--info">
+    {{ icon('alert') }}
+    <span>
+      <strong>{{ marts_missing|length }} of {{ marts|length }} analytics tables have not been built yet.</strong>
+      Run <code>python -m scripts.run_dbt --full</code> (or wait for the nightly job).
+      Panels that depend on them say so rather than showing a misleading zero.
+    </span>
+  </div>
+{% elif not ingestion.events %}
+  <div class="alert alert--info">
+    {{ icon('alert') }}
+    <span>
+      <strong>No events received in the last 24 hours.</strong>
+      Check that the collector is running and that <code>COLLECTOR_URL</code> is set on the
+      storefront — without it the beacon is not rendered at all.
+    </span>
+  </div>
+{% endif %}
+
+{% block analytics %}{% endblock %}
+
+<p class="metric__foot">
+  Behaviour figures come from first-party events collected on the storefront and modelled by dbt;
+  live cart figures are read straight from the database.
+  {% if ingestion.last_event_at %}Last event {{ ingestion.last_event_at|ago }}, {{ ingestion.events }} in the last 24h across {{ ingestion.sessions }} sessions.{% endif %}
+  Sessions end after 30 minutes of inactivity. Time on page counts only seconds the tab was visible.
+</p>
+{% endblock %}

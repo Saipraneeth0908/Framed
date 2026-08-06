@@ -17,6 +17,9 @@ os.environ.setdefault("ADMIN_SECRET_KEY", "test-secret-admin")
 os.environ.setdefault("ADMIN_TOTP_KEY", "dGVzdC10b3RwLWtleS0zMi1ieXRlcy1sb25nLXh4eHg=")
 os.environ.setdefault("EVENT_SALT_SEED", "test-salt-seed")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
+# Set, so the storefront renders the beacon and the session-id wiring is under
+# test. Unset in production means no beacon is rendered at all -- also tested.
+os.environ.setdefault("COLLECTOR_URL", "http://localhost:8002/e")
 os.environ.setdefault("FO_INSECURE_COOKIES", "1")          # test client speaks http
 os.environ.setdefault("DATABASE_URL", LOCAL_PG.format(role="postgres:postgres"))
 os.environ.setdefault("STORE_DATABASE_URL", LOCAL_PG.format(role="store_app:store_app_dev"))

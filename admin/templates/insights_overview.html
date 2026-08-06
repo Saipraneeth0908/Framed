@@ -1,0 +1,119 @@
+{% extends "_insights_base.html" %}
+{% from "_charts.html" import timeseries, funnel as funnel_chart, donut, stat, dur %}
+{% block analytics %}
+
+<section class="grid grid--metrics" aria-label="Headline">
+  {{ stat('Sessions', headline.sessions or 0, (headline.visitors or 0)|string ~ ' distinct visitors',
+          spark=trend | map(attribute='sessions') | list) }}
+  {{ stat('Conversion', (headline.conversion_pct or 0)|string ~ '%',
+          (headline.converting_sessions or 0)|string ~ ' sessions bought') }}
+  {{ stat('Median time on site', dur(headline.median_engaged_seconds or 0),
+          'mean ' ~ dur(headline.avg_engaged_seconds or 0) ~ ' — visible time only') }}
+  {{ stat('Pages per session', headline.avg_pages or 0,
+          (headline.avg_clicks or 0)|string ~ ' clicks on average') }}
+  {{ stat('Bounced', (headline.bounce_pct or 0)|string ~ '%', 'under 10 seconds engaged',
+          tone='warn' if (headline.bounce_pct or 0) > 60 else '') }}
+  {{ stat('Revenue', (headline.revenue_cents or 0)|money, 'from sessions in this window') }}
+</section>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ timeseries(trend, 'day', 'sessions', 'Sessions per day') }}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__body">
+      {{ timeseries(trend, 'day', 'revenue_cents', 'Revenue per day (cents)', slot=3) }}
+    </div>
+  </div>
+</section>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ funnel_chart(funnel, 'Where visitors stop') }}
+      {% if funnel %}
+        {% set worst = (funnel[1:] | sort(attribute='drop_pct') | reverse | first) %}
+        {% if worst and worst.drop %}
+          <p class="insight">
+            Biggest single loss is at <strong>{{ worst.label|lower }}</strong> —
+            {{ worst.drop }} sessions ({{ worst.drop_pct }}% of the step before it).
+            That is the one step worth fixing first.
+          </p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__body">
+      {{ donut(outcomes, 'outcome', 'sessions', 'How sessions ended') }}
+      {% if headline.carted_not_bought or headline.saved_not_bought %}
+        <p class="insight">
+          <strong>{{ headline.carted_not_bought or 0 }}</strong> sessions put something in a cart and left;
+          <strong>{{ headline.saved_not_bought or 0 }}</strong> saved a design and left.
+          Both are named intent — see <a href="{{ url_for('insights.abandonment', days=days) }}">Abandonment</a>.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Engagement depth</h2></div>
+    <div class="panel__body panel__body--flush">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Depth</th><th class="right">Sessions</th><th class="right">Pages</th><th class="right">Converts</th></tr></thead>
+          <tbody>
+            {% for band in depth %}
+            <tr>
+              <td data-label="Depth">
+                <span class="chip {{ 'chip--danger' if band.depth_band == 'bounce' else ('chip--ok' if band.depth_band == 'deep' else '') }}">{{ band.depth_band }}</span>
+              </td>
+              <td data-label="Sessions" class="right num">{{ band.sessions }}</td>
+              <td data-label="Pages" class="right num">{{ band.avg_pages }}</td>
+              <td data-label="Converts" class="right num">{{ band.conversion_pct or 0 }}%</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="empty">No sessions yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="panel__body">
+        <p class="metric__foot" style="margin:0">
+          bounce &lt;10s · glance &lt;1m · browse &lt;5m · deep 5m+. Bands rather than an average
+          because session length is heavily skewed — one long reader drags the mean somewhere
+          no real visitor sits.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Devices</h2></div>
+    <div class="panel__body panel__body--flush">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Device</th><th class="right">Sessions</th><th class="right">Converts</th><th class="right">Engaged</th></tr></thead>
+          <tbody>
+            {% for d in devices %}
+            <tr>
+              <td data-label="Device">{{ d.device }}</td>
+              <td data-label="Sessions" class="right num">{{ d.sessions }}</td>
+              <td data-label="Converts" class="right num">{{ d.conversion_pct or 0 }}%</td>
+              <td data-label="Engaged" class="right num">{{ dur(d.avg_engaged_seconds or 0) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="empty">No sessions yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

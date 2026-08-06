@@ -6,24 +6,43 @@ models:
       - name: event_id
         tests: [not_null]
       - name: event_name
+        description: >
+          Must stay in lockstep with ALLOWED_NAMES in collector/app.py. The
+          collector refuses anything else, so a value appearing here that is
+          missing from this list means the two drifted apart -- which is exactly
+          what this test exists to catch.
         tests:
           - not_null
           - accepted_values:
               arguments:
-                  values: [page_view, product_view, search, search_zero_results, filter_apply,
-                           config_change, add_to_cart, remove_from_cart, cart_view,
-                           checkout_start, checkout_step, checkout_error, purchase,
-                           wishlist_add, wall_preview_open, newsletter_submit, outbound_click]
+                values: [page_view, page_exit, page_heartbeat,
+                         product_view, product_click, search, search_zero_results,
+                         filter_apply, category_switch, click, outbound_click,
+                         config_change, add_to_cart, remove_from_cart, cart_view,
+                         cart_update, cart_clear, wishlist_add, wishlist_remove,
+                         wall_preview_open,
+                         checkout_start, checkout_step, checkout_field_blank,
+                         checkout_error, purchase, newsletter_submit]
       - name: occurred_at
         tests: [not_null]
       - name: visitor_key
+        tests: [not_null]
+
+  - name: stg_page_views
+    columns:
+      - name: session_id
+        tests: [not_null]
+      - name: path
+        tests: [not_null]
+      - name: active_seconds
         tests: [not_null]
 
   - name: stg_sessions
     columns:
       - name: session_key
         tests: [unique, not_null]
-      - name: duration_seconds
+      - name: session_id
+        tests: [not_null]
 
   - name: stg_orders
     columns:
@@ -33,12 +52,12 @@ models:
         tests:
           - accepted_values:
               arguments:
-                  values: [unpaid, authorized, paid, partially_refunded, refunded, failed]
+                values: [unpaid, authorized, paid, partially_refunded, refunded, failed]
       - name: fulfilment_status
         tests:
           - accepted_values:
               arguments:
-                  values: [unfulfilled, partially_fulfilled, fulfilled, in_transit, delivered, returned]
+                values: [unfulfilled, partially_fulfilled, fulfilled, in_transit, delivered, returned]
       - name: total_cents
         tests: [not_null]
 
@@ -57,9 +76,8 @@ models:
         tests:
           - accepted_values:
               arguments:
-                  values: [queued, blocked, printing, printed, mounting, framing, qc,
-                           reprint, packed, cancelled]
-      - name: qty
+                values: [queued, blocked, printing, printed, mounting, framing, qc,
+                         reprint, packed, cancelled]
 
   - name: stg_carts
     columns:
@@ -79,8 +97,8 @@ models:
         tests:
           - accepted_values:
               arguments:
-                  values: [receive, consume, damage, return, correction, cancel_restock,
-                           reserve, unreserve]
+                values: [receive, consume, damage, return, correction, cancel_restock,
+                         reserve, unreserve]
 
   - name: stg_customers
     columns:

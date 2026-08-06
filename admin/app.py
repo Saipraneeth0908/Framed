@@ -54,7 +54,13 @@ def create_app() -> Flask:
         csp=(
             "default-src 'self'; "
             "script-src 'self' 'nonce-{nonce}'; "
-            "style-src 'self'; "
+            # 'unsafe-inline' for styles only. The admin renders data-driven
+            # geometry (bar widths, heatmap cells) and 72 layout attributes
+            # across its templates; without this they are silently dropped and
+            # the panel renders subtly wrong with no error anywhere. script-src
+            # stays nonce-only, which is the directive that actually stops
+            # injected code from running.
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             f"frame-src {frame_src}; "
             "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

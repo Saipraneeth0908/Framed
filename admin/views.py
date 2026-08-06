@@ -16,6 +16,7 @@ from flask import Blueprint, Response, abort, g, redirect, render_template, requ
 
 from admin.rbac import Perm, require
 from db.repo import admin as repo
+from db.repo import analytics as analytics_repo
 
 log = logging.getLogger(__name__)
 
@@ -437,17 +438,121 @@ def create_discount():
 # Insights -- Metabase does the analytics; this page frames it.
 # --------------------------------------------------------------------------- #
 
+def _window() -> int:
+    """Shared date window. One control, in one place, for every chart on a page."""
+    try:
+        days = int(request.args.get("days", 30))
+    except (TypeError, ValueError):
+        days = 30
+    return days if days in (7, 30, 90, 365) else 30
+
+
+def _analytics_context(days: int) -> dict:
+    ready = analytics_repo.marts_ready()
+    return {
+        "days": days,
+        "marts": ready,
+        "marts_missing": [name for name, ok in ready.items() if not ok],
+        "ingestion": analytics_repo.events_today(),
+    }
+
+
 @insights.get("/")
 @require(Perm.ANALYTICS_VIEW)
 def analytics():
+    days = _window()
+    return render_template(
+        "insights_overview.html",
+        headline=analytics_repo.headline(days),
+        trend=analytics_repo.sessions_by_day(days),
+        funnel=analytics_repo.funnel(days),
+        outcomes=analytics_repo.outcomes(days),
+        depth=analytics_repo.depth_bands(days),
+        devices=analytics_repo.device_split(days),
+        page_title="Insights",
+        **_analytics_context(days),
+    )
+
+
+@insights.get("/behaviour")
+@require(Perm.ANALYTICS_VIEW)
+def behaviour():
+    days = _window()
+    return render_template(
+        "insights_behaviour.html",
+        pages=analytics_repo.page_engagement(20),
+        clicks=analytics_repo.click_targets(18),
+        heat=analytics_repo.hourly_heatmap(),
+        devices=analytics_repo.device_split(days),
+        depth=analytics_repo.depth_bands(days),
+        page_title="Behaviour",
+        **_analytics_context(days),
+    )
+
+
+@insights.get("/products")
+@require(Perm.ANALYTICS_VIEW)
+def products_analytics():
+    days = _window()
+    sort = request.args.get("sort", "views")
+    return render_template(
+        "insights_products.html",
+        journey=analytics_repo.product_journey(sort, 30),
+        best=analytics_repo.sellers("best", 8),
+        worst=analytics_repo.sellers("worst", 8),
+        never_bought=analytics_repo.looked_never_bought(12),
+        sort=sort,
+        page_title="Product performance",
+        **_analytics_context(days),
+    )
+
+
+@insights.get("/abandonment")
+@require(Perm.ANALYTICS_VIEW)
+def abandonment():
+    days = _window()
+    return render_template(
+        "insights_abandonment.html",
+        live=analytics_repo.live_carts(25),
+        totals=analytics_repo.live_totals(),
+        abandoned=analytics_repo.abandoned_interest(15),
+        outcomes=analytics_repo.outcomes(days),
+        page_title="Abandonment",
+        **_analytics_context(days),
+    )
+
+
+@insights.get("/acquisition")
+@require(Perm.ANALYTICS_VIEW)
+def acquisition():
+    days = _window()
+    return render_template(
+        "insights_acquisition.html",
+        sources=analytics_repo.acquisition(days),
+        landings=analytics_repo.landing_pages(10),
+        searches=analytics_repo.search_demand(15),
+        lost=analytics_repo.lost_demand(15),
+        trend=analytics_repo.sessions_by_day(days),
+        page_title="Acquisition",
+        **_analytics_context(days),
+    )
+
+
+@insights.get("/embed")
+@require(Perm.ANALYTICS_VIEW)
+def embedded_dashboards():
+    """Metabase, for questions this panel does not answer.
+
+    Optional by design: the dashboards above are first-party and always work.
+    """
     from admin.embeds import dashboards, embed_url, embedding_configured
 
     return render_template(
-        "insights.html",
+        "insights_embed.html",
         configured=embedding_configured(),
-        marts_ready=repo.mart_available(),
         dashboards=[(d, embed_url(d)) for d in dashboards()],
-        page_title="Insights",
+        page_title="Metabase",
+        **_analytics_context(_window()),
     )
 
 

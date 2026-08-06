@@ -123,8 +123,9 @@
 
   {% if collector_url %}
   {# First-party analytics. Separate hostname, no cookie, fails silently. #}
-  <script src="{{ url_for('static', filename='js/track.js', v='20260805-analytics') }}"
-          data-endpoint="{{ collector_url }}" defer nonce="{{ csp_nonce() }}"></script>
+  <script src="{{ url_for('static', filename='js/track.js', v='20260806-behaviour') }}"
+          data-endpoint="{{ collector_url }}" data-sid="{{ analytics_sid }}"
+          data-page="{{ request.endpoint }}" defer nonce="{{ csp_nonce() }}"></script>
   {% endif %}
   <script src="{{ url_for('static', filename='js/theme.js', v='20260727-framed') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js', v='20260723-redesign') }}"></script>

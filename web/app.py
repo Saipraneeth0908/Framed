@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import uuid
 from pathlib import Path
 
 from flask import Flask, abort, g, jsonify, redirect, render_template, request, session, url_for
@@ -93,9 +94,26 @@ def cart_items():
     return cart_repo.items(token) if token else []
 
 
+def analytics_sid() -> str:
+    """An opaque id shared by the beacon and the cart, so behaviour joins to money.
+
+    It lives in the existing strictly-necessary cart cookie -- not a new one --
+    which is why this still needs no consent banner. It is random, carries no
+    identity, and the browser is the only place it exists outside our database.
+
+    Without it there is no key at all between raw.events and store.carts: the
+    old code read session["analytics_sid"], which nothing ever set, so every
+    cart landed with a NULL session_id and the funnel could never be tied to a
+    real order.
+    """
+    if not session.get("analytics_sid"):
+        session["analytics_sid"] = str(uuid.uuid4())
+    return session["analytics_sid"]
+
+
 def cart_init():
     if not session.get("cart_token"):
-        session["cart_token"] = cart_repo.create(session_id=session.get("analytics_sid"))
+        session["cart_token"] = cart_repo.create(session_id=analytics_sid())
     return session["cart_token"]
 
 
@@ -108,6 +126,7 @@ def inject_site_context():
         # Unset means the beacon is not rendered at all -- the storefront's only
         # knowledge of analytics is this one URL.
         "collector_url": os.environ.get("COLLECTOR_URL", ""),
+        "analytics_sid": analytics_sid(),
     }
 
 

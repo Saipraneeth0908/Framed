@@ -46,6 +46,25 @@
   --sidebar-w: 232px;
   --bottombar-h: 60px;
 
+  /* Categorical palette for charts. Validated against this exact surface
+     (#12161d): lightness band, chroma floor, colour-vision-deficiency
+     separation (worst adjacent pair dE 8.4), normal-vision floor (19.3) and
+     3:1 contrast all pass. Assign in this fixed order and never cycle -- a
+     sixth series folds into "Other" or becomes small multiples instead. */
+  --viz-1: #3987e5;   /* blue    */
+  --viz-2: #d95926;   /* orange  */
+  --viz-3: #199e70;   /* aqua    */
+  --viz-4: #c98500;   /* yellow  */
+  --viz-5: #d55181;   /* magenta */
+
+  /* Sequential ramp for the heatmap: ONE hue, dark to light. A rainbow would
+     imply categories where there is only magnitude. */
+  --seq-0: #171d27;
+  --seq-1: #1d3454;
+  --seq-2: #234c82;
+  --seq-3: #2a68b4;
+  --seq-4: #3987e5;
+
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
 
@@ -373,6 +392,142 @@ table.data .mono { font-family: var(--mono); font-size: 13px; }
   font-family: var(--mono); font-size: 14px; letter-spacing: 0.08em; word-break: break-all;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: var(--s3); text-align: center;
+}
+
+/* ---------------------------------------------------------------- charts - */
+
+.chart { margin: 0; display: flex; flex-direction: column; gap: var(--s3); }
+.chart__title { font-size: 13px; font-weight: 650; color: var(--text); }
+.chart__empty {
+  padding: var(--s6) var(--s4); text-align: center; color: var(--text-faint);
+  font-size: 13px; border: 1px dashed var(--border); border-radius: var(--radius);
+}
+.chart__svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* Recessive grid: readable, never competing with the data. */
+.chart__grid { stroke: var(--border-soft); stroke-width: 1; }
+.chart__axis { fill: var(--text-faint); font-size: 9px; font-family: var(--mono); }
+.chart__axis--x { font-size: 9.5px; }
+
+.chart__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart__line--1 { stroke: var(--viz-1); }
+.chart__line--2 { stroke: var(--viz-2); }
+.chart__line--3 { stroke: var(--viz-3); }
+.chart__line--4 { stroke: var(--viz-4); }
+.chart__line--5 { stroke: var(--viz-5); }
+
+.chart__area { stroke: none; opacity: 0.16; }
+.chart__area--1 { fill: var(--viz-1); }
+.chart__area--2 { fill: var(--viz-2); }
+.chart__area--3 { fill: var(--viz-3); }
+
+.chart__dot { stroke: var(--surface); stroke-width: 1.5; }
+.chart__dot--1 { fill: var(--viz-1); }
+.chart__dot--2 { fill: var(--viz-2); }
+.chart__dot--3 { fill: var(--viz-3); }
+
+/* Invisible, generous hit target: hovering a data point is not a precision test. */
+.chart__hit { fill: transparent; }
+.chart__hit:hover { fill: var(--text); opacity: 0.05; }
+
+.spark-mini { width: 100%; height: 24px; display: block; margin-top: var(--s1); }
+
+/* Ranked horizontal bars */
+.ranked { display: flex; flex-direction: column; gap: 7px; }
+.ranked__row {
+  display: grid; grid-template-columns: minmax(90px, 1.4fr) 3fr auto auto;
+  align-items: center; gap: var(--s3); font-size: 13px;
+}
+.ranked__label {
+  color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ranked__track { background: var(--surface-2); border-radius: 4px; height: 14px; overflow: hidden; }
+/* 4px rounded data-end, anchored flat to the baseline. */
+.ranked__bar {
+  display: block; height: 100%; min-width: 3px;
+  border-radius: 0 4px 4px 0;
+  transition: filter var(--dur) var(--ease-out);
+}
+.ranked__row:hover .ranked__bar { filter: brightness(1.2); }
+.ranked__bar--1 { background: var(--viz-1); }
+.ranked__bar--2 { background: var(--viz-2); }
+.ranked__bar--3 { background: var(--viz-3); }
+.ranked__bar--4 { background: var(--viz-4); }
+.ranked__bar--5 { background: var(--viz-5); }
+.ranked__value { color: var(--text); font-weight: 600; text-align: right; min-width: 54px; }
+.ranked__secondary { color: var(--text-faint); text-align: right; min-width: 48px; font-size: 12px; }
+
+/* Funnel */
+.funnel { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s3); }
+.funnel__head { display: flex; align-items: baseline; gap: var(--s3); font-size: 13px; }
+.funnel__label { font-weight: 600; }
+.funnel__value { margin-left: auto; font-weight: 700; }
+.funnel__pct { color: var(--text-faint); min-width: 48px; text-align: right; }
+.funnel__track { background: var(--surface-2); border-radius: 4px; height: 20px; overflow: hidden; }
+.funnel__bar { height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; min-width: 3px; }
+.funnel__drop { margin: 2px 0 0; font-size: 12px; color: var(--danger); }
+
+/* Heatmap: one hue, five buckets */
+.heatmap { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+.heatmap__hours, .heatmap__row { display: grid; grid-template-columns: 34px 1fr; gap: var(--s2); align-items: center; }
+.heatmap__hours { color: var(--text-faint); font-family: var(--mono); }
+.heatmap__hours span:first-child { grid-column: 1; }
+.heatmap__hour { display: none; }
+.heatmap__day { color: var(--text-muted); font-weight: 600; }
+.heatmap__cells { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; }
+.heatmap__cell { display: block; height: 14px; border-radius: 2px; background: var(--seq-0); }
+.heatmap__cell--0 { background: var(--seq-0); }
+.heatmap__cell--1 { background: var(--seq-1); }
+.heatmap__cell--2 { background: var(--seq-2); }
+.heatmap__cell--3 { background: var(--seq-3); }
+.heatmap__cell--4 { background: var(--seq-4); }
+.heatmap__legend {
+  display: flex; align-items: center; gap: 3px; margin: var(--s2) 0 0;
+  color: var(--text-faint); font-size: 11px;
+}
+.heatmap__legend .heatmap__cell { width: 16px; }
+.heatmap__legend-label { margin: 0 var(--s2); }
+
+/* Donut */
+.donut-wrap { display: flex; gap: var(--s5); align-items: center; flex-wrap: wrap; }
+.donut { width: 132px; height: 132px; flex: none; transform: rotate(-90deg); }
+.donut__seg { fill: none; stroke-width: 3.6; }
+.donut__seg--1 { stroke: var(--viz-1); }
+.donut__seg--2 { stroke: var(--viz-2); }
+.donut__seg--3 { stroke: var(--viz-3); }
+.donut__seg--4 { stroke: var(--viz-4); }
+.donut__seg--5 { stroke: var(--viz-5); }
+.donut__total {
+  fill: var(--text); font-size: 6px; font-weight: 700; text-anchor: middle;
+  transform: rotate(90deg); transform-origin: 21px 21px; font-family: var(--font);
+}
+.donut__caption {
+  fill: var(--text-faint); font-size: 2.6px; text-anchor: middle;
+  transform: rotate(90deg); transform-origin: 21px 21px; font-family: var(--font);
+}
+.donut__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 170px; }
+.donut__legend li { display: flex; align-items: center; gap: var(--s2); font-size: 13px; }
+.donut__swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.donut__swatch--1 { background: var(--viz-1); }
+.donut__swatch--2 { background: var(--viz-2); }
+.donut__swatch--3 { background: var(--viz-3); }
+.donut__swatch--4 { background: var(--viz-4); }
+.donut__swatch--5 { background: var(--viz-5); }
+.donut__key { color: var(--text-muted); text-transform: capitalize; }
+.donut__num { margin-left: auto; font-weight: 600; }
+
+.insight {
+  border-left: 2px solid var(--viz-1); padding-left: var(--s3);
+  color: var(--text-muted); font-size: 13px; margin: 0;
+}
+.insight strong { color: var(--text); }
+
+@media (max-width: 720px) {
+  .ranked__row { grid-template-columns: 1fr auto; row-gap: 2px; }
+  .ranked__track { grid-column: 1 / -1; }
+  .ranked__secondary { display: none; }
+  .heatmap__cell { height: 11px; }
+  .heatmap__day { font-size: 10px; }
 }
 
 .bottombar { display: none; }

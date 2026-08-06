@@ -1,0 +1,112 @@
+{% extends "_insights_base.html" %}
+{% from "_charts.html" import ranked, donut, stat, dur %}
+{% from "_icons.html" import icon %}
+{% block analytics %}
+
+<section class="grid grid--metrics" aria-label="Live carts">
+  {{ stat('Live carts', totals.active_carts or 0, 'touched in the last 30 minutes') }}
+  {{ stat('Value in live carts', (totals.active_value_cents or 0)|money, 'not yet paid for') }}
+  {{ stat('Abandoned carts', totals.abandoned_carts or 0, 'idle over 30 minutes',
+          tone='warn' if (totals.abandoned_carts or 0) else '') }}
+  {{ stat('Value abandoned', (totals.abandoned_value_cents or 0)|money, 'recoverable if you ask',
+          tone='warn' if (totals.abandoned_value_cents or 0) else '') }}
+</section>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Cart holders right now</h2>
+    <span class="spacer"></span>
+    <span class="chip chip--info">live — read straight from the database, not from a mart</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>State</th><th>Contents</th><th class="right">Units</th><th class="right">Value</th>
+                   <th class="right">Idle</th><th>Contact</th></tr></thead>
+        <tbody>
+          {% for c in live %}
+          <tr>
+            <td data-label="State">
+              <span class="chip {{ 'chip--ok' if c.state == 'active' else 'chip--warn' }}">{{ c.state }}</span>
+            </td>
+            <td data-label="Contents">{{ c.products }}</td>
+            <td data-label="Units" class="right num">{{ c.units }}</td>
+            <td data-label="Value" class="right money">{{ c.value_cents|money }}</td>
+            <td data-label="Idle" class="right num">{{ dur((c.idle_minutes or 0) * 60) }}</td>
+            <td data-label="Contact">
+              {% if c.email and can(Perm.CUSTOMER_VIEW) %}{{ c.email }}
+              {% elif c.email %}<span class="chip">email on file</span>
+              {% else %}<span style="color:var(--text-faint)">anonymous</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty">
+            <p class="empty__title">No carts open</p>
+            <p>A cart appears here the moment someone adds a poster.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel__body">
+      <p class="insight">
+        Most of these carts are anonymous — an email only exists once someone reaches checkout.
+        That is the honest limit of cart recovery on a store that does not force an account.
+      </p>
+    </div>
+  </div>
+</div>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ donut(outcomes, 'outcome', 'sessions', 'How sessions ended') }}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(abandoned, 'product_name', 'abandoned_cart_adds',
+                'Added to a cart, never bought', slot=2,
+                secondary_key='abandoned_saves', secondary_label='also saved', limit=10) }}
+      <p class="insight">Right-hand figure is how many times the same product was saved to a wishlist and still not bought.</p>
+    </div>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Declared intent that never became money</h2>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Product</th><th class="right">Cart adds</th><th class="right">Saves</th>
+                   <th class="right">Sessions</th><th class="right">Bought something else</th>
+                   <th class="right">Value at stake</th><th class="right">Last seen</th></tr></thead>
+        <tbody>
+          {% for a in abandoned %}
+          <tr>
+            <td data-label="Product">{{ a.product_name }}<br><small class="mono" style="color:var(--text-faint)">{{ a.slug }}</small></td>
+            <td data-label="Cart adds" class="right num">{{ a.abandoned_cart_adds }}</td>
+            <td data-label="Saves" class="right num">{{ a.abandoned_saves }}</td>
+            <td data-label="Sessions" class="right num">{{ a.sessions }}</td>
+            <td data-label="Bought something else" class="right num">{{ a.sessions_that_bought_else }}</td>
+            <td data-label="Value at stake" class="right money">{{ (a.floor_value_cents or 0)|money }}</td>
+            <td data-label="Last seen" class="right">{{ a.last_abandoned_at|ago }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty">Nothing abandoned yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel__body">
+      <p class="insight">
+        Value at stake is priced at the <strong>cheapest</strong> configuration of each product, deliberately.
+        An averaged figure would inflate the number and over-fund a recovery campaign.
+        A high "bought something else" count means the product lost a comparison, not the sale.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

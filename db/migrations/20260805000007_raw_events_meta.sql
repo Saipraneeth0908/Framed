@@ -45,6 +45,9 @@ begin
         (m + (i || ' months')::interval)::date,
         (m + ((i + 1) || ' months')::interval)::date);
       execute format('grant insert, select on raw.%I to ingest, etl', part);
+      -- The admin panel reports ingestion health, so an empty dashboard can be
+      -- explained ("no events today") rather than just looking broken.
+      execute format('grant select on raw.%I to admin_app', part);
       made := made + 1;
     end if;
   end loop;
@@ -150,6 +153,7 @@ create index dq_results_time on meta.dq_results (run_at desc, status);
 -- never opens a Postgres connection. `ingest` keeps the grant so the Tier-2
 -- direct-write collector is a config change rather than a migration.
 grant insert, select on raw.events to ingest, etl;
+grant select on raw.events to admin_app;
 grant select on raw.outbox, raw.domain_events, raw.stripe_txns to etl;
 grant insert on raw.outbox to store_app, admin_app;
 grant usage, select on sequence raw.outbox_id_seq to store_app, admin_app;

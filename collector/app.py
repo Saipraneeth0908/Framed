@@ -36,11 +36,21 @@ MAX_BODY = 64 * 1024
 MAX_BATCH = 50
 STREAM_MAXLEN = 500_000          # bounded so a stalled worker cannot eat the box
 
+# An allowlist, not a pattern: an unknown event name is a bug or an abuser, and
+# either way it must not reach the warehouse and silently become a metric.
 ALLOWED_NAMES = {
-    "page_view", "product_view", "search", "search_zero_results", "filter_apply",
+    # navigation and attention
+    "page_view", "page_exit", "page_heartbeat",
+    # discovery
+    "product_view", "product_click", "search", "search_zero_results",
+    "filter_apply", "category_switch", "click", "outbound_click",
+    # intent
     "config_change", "add_to_cart", "remove_from_cart", "cart_view",
-    "checkout_start", "checkout_step", "checkout_error", "purchase",
-    "wishlist_add", "wall_preview_open", "newsletter_submit", "outbound_click",
+    "cart_update", "cart_clear", "wishlist_add", "wishlist_remove",
+    "wall_preview_open",
+    # conversion
+    "checkout_start", "checkout_step", "checkout_field_blank", "checkout_error",
+    "purchase", "newsletter_submit",
 }
 
 BOT_PATTERN = re.compile(
