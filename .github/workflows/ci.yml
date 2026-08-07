@@ -88,6 +88,10 @@ jobs:
       - name: Tests
         run: pytest -q
 
+      # --project-dir rather than `cd dbt`: DBT_PROFILES_DIR was set to the
+      # relative "dbt", so after the cd it resolved to dbt/dbt and dbt refused to
+      # start. dbt reads PG* through dbt/profiles.yml; the block is repeated
+      # because the Actions parser does not support YAML aliases.
       - name: Build and test the warehouse
         env:
           PGHOST: localhost
@@ -95,8 +99,7 @@ jobs:
           PGUSER: etl
           PGPASSWORD: etl_dev
           PGDATABASE: framedobsessions
-          DBT_PROFILES_DIR: dbt
-        run: cd dbt && dbt build
+        run: dbt build --project-dir dbt --profiles-dir dbt
 
       - name: Prove the warehouse build is idempotent
         env:
@@ -105,8 +108,7 @@ jobs:
           PGUSER: etl
           PGPASSWORD: etl_dev
           PGDATABASE: framedobsessions
-          DBT_PROFILES_DIR: dbt
-        run: cd dbt && dbt build
+        run: dbt build --project-dir dbt --profiles-dir dbt
 
       # Now that the marts exist, the warehouse assertions can actually run --
       # against the traffic the test suite above generated. -rs prints any skip
