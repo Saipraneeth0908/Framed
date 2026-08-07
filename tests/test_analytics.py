@@ -217,7 +217,33 @@ def test_marts_readiness_is_reported_per_table():
 
 def test_a_missing_mart_yields_an_empty_result_not_an_exception():
     """A fresh install must show 'no data', never a 500."""
+    repo.take_failures()
     assert repo._query("select 1", mart="mart_does_not_exist") == []
+    # An unbuilt mart is not a failure -- it must not raise the alarm.
+    assert repo.take_failures() == []
+
+
+def test_a_broken_query_is_reported_rather_than_shown_as_zero():
+    """The failure that matters: an empty panel the owner reads as a quiet week."""
+    repo.take_failures()
+    assert repo._query("select * from mart.mart_visitor_sessions where nope = 1",
+                       mart="mart_visitor_sessions") == []
+    assert repo.take_failures() == ["mart_visitor_sessions"]
+
+
+def test_failures_are_drained_so_they_do_not_leak_into_the_next_page():
+    repo.take_failures()
+    repo._query("select this is not sql")
+    assert repo.take_failures() == ["live query"]
+    assert repo.take_failures() == []
+
+
+def test_a_broken_panel_says_so_on_the_page(as_role, monkeypatch):
+    client = as_role("owner")
+    monkeypatch.setattr(repo, "funnel", lambda days=30: repo._query("select bad sql here"))
+    body = client.get("/insights/?days=30").data.decode()
+    assert "failed to load" in body
+    assert 'do not read them as "no activity"' in body
 
 
 def test_ingestion_health_is_queryable_by_the_admin_role():

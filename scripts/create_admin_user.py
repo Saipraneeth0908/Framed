@@ -1,9 +1,17 @@
-"""Create the first admin account.
+"""Create the first admin account, or recover one nobody can sign into.
 
     python -m scripts.create_admin_user --email you@example.com --name "Your Name" --role owner
+    python -m scripts.create_admin_user --email you@example.com --name "" --reset-totp
 
 Password is read from ADMIN_BOOTSTRAP_PASSWORD, or generated and printed once.
 Owner and manager accounts are forced through TOTP enrolment at first sign-in.
+
+``--reset-totp`` clears the enrolment so the next sign-in shows the QR code
+again. It is the way out of the two situations the panel cannot fix from
+inside itself: a lost authenticator, and an ADMIN_TOTP_KEY that has been
+rotated out from under the stored secrets. Both leave every owner locked out,
+and the only screen that could re-enrol them is behind the login they cannot
+complete.
 """
 
 from __future__ import annotations
@@ -20,15 +28,46 @@ from admin.auth import create_user, hash_password  # noqa: E402
 from db.conn import Role, tx  # noqa: E402
 
 
+def reset_totp(email: str) -> int:
+    with tx(Role.SUPER) as cur:
+        # session_version bumps so a session opened before the reset cannot be
+        # the thing that re-enrols: whoever does it has to prove the password.
+        cur.execute(
+            """update ops.users
+                  set totp_secret_enc = null, totp_enabled = false,
+                      session_version = session_version + 1,
+                      failed_attempts = 0, locked_until = null
+                where email = %s and archived_at is null
+            returning id, role""",
+            (email,),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        print(f"no active account for {email}")
+        return 1
+    print(f"two-factor cleared for {email} (id {row['id']}, role {row['role']})")
+    print("Live sessions for this account are now refused.")
+    print("Next sign-in with the existing password shows the QR code again.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--email", required=True)
-    parser.add_argument("--name", required=True)
+    parser.add_argument("--name", default="")
     parser.add_argument("--role", default="owner",
                         choices=["owner", "manager", "inventory", "fulfilment"])
     parser.add_argument("--reset", action="store_true",
                         help="Reset the password if the account already exists")
+    parser.add_argument("--reset-totp", action="store_true",
+                        help="Clear the two-factor enrolment; the next sign-in re-enrols")
     args = parser.parse_args()
+
+    if args.reset_totp:
+        return reset_totp(args.email)
+    if not args.name:
+        parser.error("--name is required unless you are passing --reset-totp")
 
     password = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD") or secrets.token_urlsafe(18)
 

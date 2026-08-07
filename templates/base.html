@@ -11,10 +11,21 @@
   <meta property="og:type" content="website">
   <link rel="icon" href="{{ url_for('static', filename='img/logo-favicon.png') }}" type="image/png">
   <script nonce="{{ csp_nonce() }}">(function(){var r=document.documentElement;var u=new URLSearchParams(location.search).get('cat');var c=u||localStorage.getItem('fo-category')||'all';if(u)localStorage.setItem('fo-category',u);if(c!=='all')r.setAttribute('data-theme',c);r.setAttribute('data-cat',c);})();</script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='20260727-framed4') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='20260806-glass3') }}">
 </head>
 <body data-page="{{ request.endpoint }}">
   <a class="skip-link" href="#main-content">Skip to content</a>
+
+  {# Refraction field for the liquid-glass controls. Referenced by
+     backdrop-filter: url(#fo-refract) in styles.css; browsers that cannot use
+     an SVG filter as a backdrop simply fall back to the plain blur. #}
+  <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="fo-refract" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2" seed="17" result="grain"/>
+      <feGaussianBlur in="grain" stdDeviation="2.4" result="field"/>
+      <feDisplacementMap in="SourceGraphic" in2="field" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
 
   <div class="brand-bar">
     <div class="container brand-bar__inner">

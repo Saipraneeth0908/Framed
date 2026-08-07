@@ -34,12 +34,28 @@
   {% endfor %}
 </nav>
 
-{% if marts_missing %}
+{#
+  Order matters. A broken query and an unbuilt mart both empty the page, but
+  only one of them means something is on fire, so it is reported first and
+  never silently.
+#}
+{% if query_errors %}
+  <div class="alert alert--error">
+    {{ icon('alert') }}
+    <span>
+      <strong>{{ query_errors|length }} panel{{ '' if query_errors|length == 1 else 's' }} on this page failed to load.</strong>
+      They are showing empty, not zero — do not read them as "no activity".
+      Source{{ '' if query_errors|length == 1 else 's' }}:
+      {% for name in query_errors %}<code>{{ name }}</code>{{ ', ' if not loop.last }}{% endfor %}.
+      The exception is in the admin log.
+    </span>
+  </div>
+{% elif marts_missing %}
   <div class="alert alert--info">
     {{ icon('alert') }}
     <span>
       <strong>{{ marts_missing|length }} of {{ marts|length }} analytics tables have not been built yet.</strong>
-      Run <code>python -m scripts.run_dbt --full</code> (or wait for the nightly job).
+      Run <code>python -m scripts.run_dbt --full</code> (or wait for the scheduled build).
       Panels that depend on them say so rather than showing a misleading zero.
     </span>
   </div>

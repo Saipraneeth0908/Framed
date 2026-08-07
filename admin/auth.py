@@ -169,6 +169,27 @@ def set_password(user_id: int, password: str, actor_id: int | None = None) -> No
     current_app.session_interface.revoke_all_for(user_id)
 
 
+def reset_totp(user_id: int, actor_id: int | None = None) -> None:
+    """Clear an enrolment so the user re-enrols at their next sign-in.
+
+    Lost phone, replaced phone, or an ADMIN_TOTP_KEY rotation that orphaned
+    every stored secret. This grants nobody anything on its own -- the user
+    still has to know their password, and re-enrolling is what lets them back
+    in. Revoking their sessions first means a session opened before the reset
+    cannot be the thing that enrols the new secret.
+    """
+    with tx(Role.ADMIN, actor_id=actor_id) as cur:
+        cur.execute(
+            """update ops.users
+                  set totp_secret_enc = null, totp_enabled = false,
+                      session_version = session_version + 1,
+                      failed_attempts = 0, locked_until = null
+                where id = %s""",
+            (user_id,),
+        )
+    current_app.session_interface.revoke_all_for(user_id)
+
+
 def set_role(user_id: int, role: str, actor_id: int | None = None) -> None:
     with tx(Role.ADMIN, actor_id=actor_id) as cur:
         cur.execute(
@@ -295,8 +316,15 @@ def totp_challenge():
     try:
         secret = decrypt_totp(row["totp_secret_enc"])
     except (InvalidToken, TypeError):
-        log.error("TOTP secret for user %s cannot be decrypted; ADMIN_TOTP_KEY may have rotated", uid)
-        abort(500)
+        # Almost always a changed ADMIN_TOTP_KEY. Nobody can sign in, so nobody
+        # can reach the screen that fixes it -- say which command does.
+        log.error("TOTP secret for user %s cannot be decrypted; ADMIN_TOTP_KEY has changed", uid)
+        abort(500, description=(
+            "This account's two-factor secret cannot be decrypted, which means "
+            "ADMIN_TOTP_KEY is not the key it was enrolled with. Restore the "
+            "original key, or clear the enrolment with: python -m "
+            f"scripts.create_admin_user --email {user['email']} --reset-totp"
+        ))
 
     code = request.form.get("code", "").replace(" ", "")
     # valid_window=1 accepts the adjacent step, covering ordinary clock drift
@@ -323,9 +351,17 @@ def enroll():
     if request.method == "POST":
         secret = session.get("enroll_secret", "")
         if not secret or not pyotp.TOTP(secret).verify(request.form.get("code", ""), valid_window=1):
+            # "Try the next one" was the old message, and it is the one thing
+            # that never helps: a wrong code here is almost always a stale QR
+            # from a previous visit, an older entry left in the authenticator,
+            # or a phone whose clock has drifted past the 30-second window.
             return render_template("enroll.html", user=user, secret=secret,
                                    qr=_qr_svg(user["email"], secret),
-                                   error="That code is not valid yet -- try the next one.",
+                                   error=("That code did not match. Delete any older "
+                                          "\"Framed Obsessions\" entry in your authenticator, "
+                                          "scan the code above again, and enter the digits it "
+                                          "shows. If it still fails, your phone's clock is off -- "
+                                          "turn on automatic date and time."),
                                    page_title="Set up two-factor"), 401
         with tx(Role.ADMIN, actor_id=uid) as cur:
             cur.execute(
@@ -347,7 +383,14 @@ def _qr_svg(email: str, secret: str) -> str:
     uri = pyotp.TOTP(secret).provisioning_uri(name=email, issuer_name="Framed Obsessions")
     # Inline SVG: the CSP forbids remote images, and a QR service would leak the
     # TOTP secret to a third party.
-    return segno.make(uri, error="m").svg_inline(scale=4, dark="#e8edf5", light=None)
+    #
+    # Dark modules dark, light modules opaque white, and a real quiet zone. It
+    # used to draw near-white modules on a transparent background so it would
+    # look right on the dark panel -- which is an inverted QR with no quiet
+    # zone, and phone scanners refuse those. A code nobody's camera reads is
+    # not a design choice. The white plate behind it is styled in .qr.
+    return segno.make(uri, error="m").svg_inline(scale=4, border=3,
+                                                 dark="#0b0f14", light="#ffffff")
 
 
 @bp.post("/logout")

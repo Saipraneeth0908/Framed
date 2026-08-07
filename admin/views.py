@@ -414,6 +414,21 @@ def change_role(user_id: int):
     return redirect(url_for("people.users"))
 
 
+@people.post("/users/<int:user_id>/reset-2fa")
+@require(Perm.USER_MANAGE)
+def reset_two_factor(user_id: int):
+    """Lost phone, or a rotated ADMIN_TOTP_KEY that orphaned every secret.
+
+    Without this the only screen that can re-enrol somebody sits behind the
+    login they can no longer complete, and the fix is a shell on the database.
+    """
+    from admin.auth import reset_totp
+
+    log.warning("2fa reset for uid=%s by uid=%s", user_id, _actor())
+    reset_totp(user_id, actor_id=_actor())
+    return redirect(url_for("people.users"))
+
+
 # --------------------------------------------------------------------------- #
 # Growth
 # --------------------------------------------------------------------------- #
@@ -448,12 +463,20 @@ def _window() -> int:
 
 
 def _analytics_context(days: int) -> dict:
+    """Shared footer context for every insights page.
+
+    Called last in each render_template(...) call on purpose: keyword arguments
+    evaluate in source order, so by the time this runs every panel's query has
+    already run and take_failures() can report the ones that broke.
+    """
     ready = analytics_repo.marts_ready()
+    ingestion = analytics_repo.events_today()
     return {
         "days": days,
         "marts": ready,
         "marts_missing": [name for name, ok in ready.items() if not ok],
-        "ingestion": analytics_repo.events_today(),
+        "ingestion": ingestion,
+        "query_errors": analytics_repo.take_failures(),
     }
 
 

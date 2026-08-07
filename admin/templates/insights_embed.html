@@ -32,6 +32,12 @@ METABASE_EMBED_SECRET=&lt;the embedding secret from Metabase admin&gt;</pre>
 </div>
 
 {% else %}
+{#
+  The id is printed under every frame. Metabase assigns ids in creation order,
+  so the defaults here are a guess about someone else's install; a wrong one
+  renders a blank iframe with no clue as to which knob fixes it. This is that
+  clue.
+#}
 {% for dash, url in dashboards %}
 <section class="panel">
   <div class="panel__head">
@@ -41,6 +47,13 @@ METABASE_EMBED_SECRET=&lt;the embedding secret from Metabase admin&gt;</pre>
   </div>
   <div class="panel__body panel__body--flush">
     <iframe class="embed-frame" src="{{ url }}" title="{{ dash.title }}" loading="lazy"></iframe>
+  </div>
+  <div class="panel__body">
+    <p class="metric__foot" style="margin:0">
+      Metabase dashboard <code>id {{ dash.metabase_id }}</code>. Blank frame? That id does not exist
+      or is not published for embedding — set <code>FO_DASHBOARD_{{ dash.key|upper }}</code> to the
+      number in the dashboard's own URL.
+    </p>
   </div>
 </section>
 {% endfor %}

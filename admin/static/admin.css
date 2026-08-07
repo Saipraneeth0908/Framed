@@ -386,8 +386,11 @@ table.data .mono { font-family: var(--mono); font-size: 13px; }
 .auth-card { width: 100%; max-width: 400px; }
 .auth-card .panel__body { padding: var(--s5); }
 .auth-card .brand { justify-content: center; margin-bottom: var(--s5); }
-.qr { display: grid; place-items: center; padding: var(--s4); background: var(--surface-2); border-radius: var(--radius); }
-.qr svg { width: 190px; height: 190px; }
+/* White plate, not the dark surface: a QR needs dark-on-light and a quiet zone
+   to be readable by a phone camera. This is the one element in the panel that
+   does not get to follow the dark theme. */
+.qr { display: grid; place-items: center; padding: var(--s4); background: #fff; border-radius: var(--radius); }
+.qr svg { width: 190px; height: 190px; display: block; }
 .secret {
   font-family: var(--mono); font-size: 14px; letter-spacing: 0.08em; word-break: break-all;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);

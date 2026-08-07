@@ -227,3 +227,156 @@ def test_ledger_still_has_no_drift_after_all_of_that():
     with tx(Role.SUPER) as cur:
         cur.execute("select * from ops.ledger_drift()")
         assert cur.fetchall() == []
+
+
+# --------------------------------------------------------------------------- #
+# Two-factor recovery -- the panel must not be able to lock everyone out of itself
+# --------------------------------------------------------------------------- #
+
+def test_an_owner_can_reset_someone_elses_two_factor(as_role, staff):
+    client = as_role("owner")
+    with tx(Role.SUPER) as cur:
+        cur.execute("select id from ops.users where email = 'manager@test.local'")
+        target = cur.fetchone()["id"]
+
+    assert client.post(f"/people/users/{target}/reset-2fa").status_code == 302
+
+    with tx(Role.SUPER) as cur:
+        cur.execute("select totp_enabled, totp_secret_enc from ops.users where id = %s", (target,))
+        row = cur.fetchone()
+    assert row["totp_enabled"] is False
+    assert row["totp_secret_enc"] is None
+
+
+def test_resetting_two_factor_signs_that_account_out(as_role, staff):
+    """Otherwise a session opened before the reset could enrol the new secret."""
+    victim = as_role("manager")
+    assert victim.get("/").status_code == 200
+
+    with tx(Role.SUPER) as cur:
+        cur.execute("select id from ops.users where email = 'manager@test.local'")
+        target = cur.fetchone()["id"]
+    as_role("owner").post(f"/people/users/{target}/reset-2fa")
+
+    assert victim.get("/").status_code == 302, "the pre-reset session must be refused"
+
+
+def test_only_user_manage_can_reset_two_factor(as_role):
+    with tx(Role.SUPER) as cur:
+        cur.execute("select id from ops.users where email = 'fulfilment@test.local'")
+        target = cur.fetchone()["id"]
+    # manager holds every permission except USER_MANAGE.
+    assert as_role("manager").post(f"/people/users/{target}/reset-2fa").status_code == 403
+    assert as_role("fulfilment").post(f"/people/users/{target}/reset-2fa").status_code == 403
+
+
+def test_after_a_reset_the_owner_is_sent_back_to_enrolment(admin_app, staff):
+    """The point of the reset: a fresh QR, not a permanent lockout."""
+    with tx(Role.SUPER) as cur:
+        cur.execute("select id from ops.users where email = 'owner@test.local'")
+        uid = cur.fetchone()["id"]
+    with admin_app.test_request_context():
+        from admin.auth import reset_totp
+
+        reset_totp(uid)
+
+    client = admin_app.test_client()
+    response = client.post("/login", data={"email": "owner@test.local", "password": ADMIN_PASSWORD},
+                           follow_redirects=True)
+    assert b"Set up two-factor" in response.data
+
+
+def test_an_undecryptable_secret_names_the_recovery_command(admin_app, staff, monkeypatch):
+    """A rotated ADMIN_TOTP_KEY must not dead-end on a bare 500."""
+    import admin.auth as auth
+
+    # Self-contained: an earlier test may have cleared this account's enrolment,
+    # and without one the login redirects to enrolment instead of the challenge.
+    with tx(Role.SUPER) as cur:
+        cur.execute(
+            """update ops.users set totp_enabled = true, totp_secret_enc = %s
+                where email = 'owner@test.local'""",
+            (auth.encrypt_totp(pyotp.random_base32()),),
+        )
+    monkeypatch.setattr(auth, "decrypt_totp", _bad_token)
+    client = admin_app.test_client()
+    client.post("/login", data={"email": "owner@test.local", "password": ADMIN_PASSWORD})
+    response = client.post("/login/totp", data={"code": "000000"})
+    assert response.status_code == 500
+    assert b"--reset-totp" in response.data
+
+
+def _bad_token(_blob):
+    from cryptography.fernet import InvalidToken
+
+    raise InvalidToken()
+
+
+def test_generating_secrets_twice_never_changes_an_existing_one(tmp_path, monkeypatch):
+    """The bug this prevents: a second setup run silently voids every enrolment."""
+    import scripts.gen_secrets as gen
+
+    env = tmp_path / ".env"
+    monkeypatch.setattr(gen, "ENV", env)
+
+    gen.main()
+    first = env.read_text(encoding="utf-8")
+    assert "ADMIN_TOTP_KEY=" in first
+
+    gen.main()
+    assert env.read_text(encoding="utf-8") == first, "a re-run must not rewrite any key"
+
+
+def test_generating_secrets_fills_only_the_missing_ones(tmp_path, monkeypatch):
+    import scripts.gen_secrets as gen
+
+    env = tmp_path / ".env"
+    env.write_text("ADMIN_TOTP_KEY=keep-me\nWEB_SECRET_KEY=\n", encoding="utf-8")
+    monkeypatch.setattr(gen, "ENV", env)
+
+    gen.main()
+    text = env.read_text(encoding="utf-8")
+    assert "ADMIN_TOTP_KEY=keep-me" in text, "a set key is never regenerated"
+    assert text.count("WEB_SECRET_KEY=") == 1, "a blank key is filled in place, not duplicated"
+    assert "WEB_SECRET_KEY=\n" not in text, "and it is actually filled"
+    assert "ADMIN_SECRET_KEY=" in text
+
+
+def test_the_enrolment_qr_is_dark_on_light_with_a_quiet_zone(admin_app):
+    import re
+
+    """An inverted or unpadded QR renders fine and no phone camera will read it."""
+    from admin.auth import _qr_svg
+
+    svg = _qr_svg("owner@test.local", pyotp.random_base32()).lower()
+    assert 'fill="#fff"' in svg, "light modules must be painted white, not left transparent"
+    assert 'stroke="#0b0f14"' in svg, "dark modules must actually be dark"
+    assert "#e8edf5" not in svg, "the near-white module colour was the inversion bug"
+
+    # A quiet zone the scanner can find the finder patterns against: the white
+    # plate starts at 0,0 but the first dark module must be inset from it.
+    plate = re.search(r'fill="#fff" d="m0 0h(\d+)', svg)
+    first_dark = re.search(r'stroke="#0b0f14" d="m(\d+) ', svg)
+    assert plate and first_dark
+    assert int(first_dark.group(1)) >= 2, "no quiet zone; scanners need a light margin"
+
+
+def test_the_enrolment_qr_encodes_a_scannable_otpauth_uri(admin_app):
+    """What the camera reads has to be the secret the server will verify."""
+    import re
+    from urllib.parse import parse_qs, unquote, urlparse
+
+    import segno
+
+    secret = pyotp.random_base32()
+    uri = pyotp.TOTP(secret).provisioning_uri(name="owner@test.local",
+                                              issuer_name="Framed Obsessions")
+    parsed = urlparse(uri)
+    assert parsed.scheme == "otpauth" and parsed.netloc == "totp"
+    assert parse_qs(parsed.query)["secret"] == [secret]
+    assert unquote(parsed.path).startswith("/Framed Obsessions:")
+
+    # And the SVG on the page is that URI, not a placeholder.
+    svg = segno.make(uri, error="m").svg_inline(scale=4, border=3,
+                                                dark="#0b0f14", light="#ffffff")
+    assert re.search(r"<path[^>]+d=", svg), "the QR must render actual modules"

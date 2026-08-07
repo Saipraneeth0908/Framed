@@ -9,11 +9,17 @@ Two sources, chosen per question:
 
 Every mart-backed function degrades to an empty result if dbt has not run yet,
 so a fresh install shows an honest "no data" panel rather than a 500.
+
+"Not built yet" and "the query broke" both produce an empty panel, and they mean
+opposite things -- the first is a fresh install, the second is an outage the
+owner is about to mistake for a quiet week. So a failed query is recorded and
+handed to the page, which says so.
 """
 
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 
 from db.conn import Role, tx
 
@@ -40,6 +46,17 @@ def marts_ready() -> dict[str, bool]:
         return {r["name"]: r["ok"] for r in cur.fetchall()}
 
 
+# Queries that raised while building the page currently being rendered.
+_failures: ContextVar[tuple[str, ...]] = ContextVar("analytics_failures", default=())
+
+
+def take_failures() -> list[str]:
+    """Drain what broke while rendering this page. Read once, by the view."""
+    failed = list(_failures.get())
+    _failures.set(())
+    return failed
+
+
 def _query(sql: str, params: tuple | dict | None = None, mart: str | None = None) -> list[dict]:
     """Run a mart query, returning [] rather than raising when it is not built."""
     try:
@@ -52,6 +69,7 @@ def _query(sql: str, params: tuple | dict | None = None, mart: str | None = None
             return cur.fetchall()
     except Exception:                                    # noqa: BLE001
         log.exception("analytics query failed (mart=%s)", mart)
+        _failures.set(_failures.get() + (mart or "live query",))
         return []
 
 

@@ -252,3 +252,54 @@ def test_the_drift_check_reports_zero_on_a_healthy_ledger():
     from worker.main import check_ledger_drift
 
     assert check_ledger_drift() == 0
+
+
+# --------------------------------------------------------------------------- #
+# Mart refresh -- the schedule is deployed code now, so it is testable
+# --------------------------------------------------------------------------- #
+
+def test_the_schedule_covers_every_tag_the_models_use():
+    """A tag on a model with no matching schedule entry never rebuilds."""
+    from pathlib import Path
+
+    from scripts.run_dbt import SCHEDULE
+
+    scheduled = {arg.split(":", 1)[1] for _, extra in SCHEDULE for arg in extra if arg.startswith("tag:")}
+    tagged = set()
+    for model in Path("dbt/models/marts").glob("*.sql"):
+        head = model.read_text(encoding="utf-8").split("\n", 1)[0]
+        tagged.update(t.strip(" '\"") for t in head.partition("tags=[")[2].partition("]")[0].split(","))
+    assert tagged - {""} <= scheduled, "a mart is tagged for a schedule that does not exist"
+
+
+def test_each_schedule_entry_maps_to_a_real_dbt_command(monkeypatch):
+    import scripts.run_dbt as runner
+
+    seen = []
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda cmd, **kw: seen.append(cmd) or _completed())
+    monkeypatch.setattr(runner, "record", lambda path: (0, 0))
+
+    for _, extra in runner.SCHEDULE:
+        runner.run_once(extra)
+
+    assert seen[0] == ["dbt", "build", "--select", "tag:realtime"]
+    assert seen[-1] == ["dbt", "build", "--full-refresh"]
+
+
+def test_a_failed_build_does_not_kill_the_scheduler(monkeypatch):
+    """Postgres bouncing must delay the next build, not end all of them."""
+    import scripts.run_dbt as runner
+
+    monkeypatch.setattr(runner, "run_once", _raise)
+    runner._guarded(["--select", "tag:realtime"])         # must not propagate
+
+
+def _raise(*_args, **_kwargs):
+    raise RuntimeError("connection refused")
+
+
+def _completed():
+    import subprocess
+
+    return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")

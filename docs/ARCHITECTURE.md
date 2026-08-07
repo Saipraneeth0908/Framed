@@ -28,7 +28,7 @@ new connection string for `bi_reader` is the whole migration.
 | OLTP | Postgres 16, managed | + read replica | p95 checkout > 300ms, or BI slows writes |
 | Warehouse | `mart` in the same cluster | replica-hosted marts | mart refresh > 5 min |
 | Event buffer | Redis Stream | Redis with persistence → Redpanda | events > 50/s sustained |
-| Orchestration | cron + `scripts/run_dbt.py` | Dagster | DAG exceeds ~25 models |
+| Orchestration | `scripts/run_dbt.py --schedule`, one container | Dagster | DAG exceeds ~25 models |
 | Logs | Loki | ELK | full-text search over hundreds of GB |
 
 Every upgrade is a swap behind an unchanged contract. Nothing above requires a

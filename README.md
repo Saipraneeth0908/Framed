@@ -1,7 +1,7 @@
 # Framed Obsessions
 
 A framed-poster storefront plus an operations admin panel, on one Postgres
-cluster. Four processes, four database roles, one repository.
+cluster. Five processes, four database roles, one repository.
 
 | Process | Hostname | DB role | What it is |
 |---|---|---|---|
@@ -9,6 +9,7 @@ cluster. Four processes, four database roles, one repository.
 | `admin` | admin.framedobsessions.com | `admin_app` | Staff-only operations panel |
 | `collector` | e.framedobsessions.com | `ingest` | Write-only analytics beacon endpoint |
 | `worker` | no ingress | `etl` | Event loader, outbox relay, scheduled jobs, metrics |
+| `dbt` | no ingress | `etl` | Mart refresh on a schedule, recorded in `meta.dbt_runs` |
 
 The admin panel is a **separate application on a separate hostname with its own
 cookie and its own secret**. It shares no routes and no session with the
@@ -31,19 +32,10 @@ python -m pip install -r requirements-dev.txt
 cd deploy
 docker compose up -d postgres redis
 
-# Generate local secrets into deploy/.env (gitignored)
-python - <<'PY'
-import secrets, pathlib
-from base64 import urlsafe_b64encode
-keys = {
-    "WEB_SECRET_KEY": secrets.token_urlsafe(48),
-    "ADMIN_SECRET_KEY": secrets.token_urlsafe(48),
-    "EVENT_SALT_SEED": secrets.token_urlsafe(32),
-    "ADMIN_TOTP_KEY": urlsafe_b64encode(secrets.token_bytes(32)).decode(),
-    "METABASE_EMBED_SECRET": secrets.token_hex(32),
-}
-pathlib.Path("deploy/.env").write_text("\n".join(f"{k}={v}" for k, v in keys.items()) + "\n")
-PY
+# Generate local secrets into deploy/.env (gitignored). Safe to re-run: it only
+# fills in what is missing, because regenerating ADMIN_TOTP_KEY would break
+# every enrolled authenticator and ADMIN_SECRET_KEY would sign everybody out.
+python -m scripts.gen_secrets
 
 # Schema, then the catalog
 docker compose --profile tools run --rm dbmate up
@@ -70,7 +62,7 @@ first sign-in; the QR code is rendered inline.
 
 ```powershell
 ruff check .
-pytest                                   # 104 tests
+pytest                                   # 148 tests
 sh scripts/roundtrip.sh                  # every migration down and back up (run from deploy/)
 cd dbt ; dbt build                       # 21 models, 59 data tests
 ```
@@ -95,10 +87,18 @@ docs/        architecture and runbook
 
 - Payments run through a **stub gateway** unless `STRIPE_SECRET_KEY` is set. The
   Stripe Checkout path and its webhook signature verification are implemented
-  but have not been exercised against live Stripe credentials.
-- Metabase dashboards are defined as marts and embed slots; the dashboards
-  themselves must be built once in Metabase and their ids set via
-  `FO_DASHBOARD_*`.
-- Prometheus, Alertmanager, Grafana and Loki are configured but were not brought
-  up in this environment; the metrics they scrape are live and verifiable.
+  but have not been exercised against live Stripe credentials. Until they are,
+  orders settle instantly and the Orders screen is not describing real money.
+- Metabase needs a one-time manual setup — build the six dashboards, publish
+  each for embedding, set `FO_DASHBOARD_*`. Steps in
+  [docs/RUNBOOK.md](docs/RUNBOOK.md#metabase). Everything else under Insights is
+  first-party and works without it.
 - Most poster images are still missing. The storefront has visual fallbacks.
+
+## Before going live
+
+- Remove the demo analytics data: `python -m scripts.generate_demo_traffic
+  --purge`. It is tagged `props.demo = true` and purges cleanly, but every
+  Insights number is meaningless until it is gone.
+- Rotate the seeded database role passwords (see the runbook).
+- Bring up monitoring: `docker compose --profile monitoring up -d`.
