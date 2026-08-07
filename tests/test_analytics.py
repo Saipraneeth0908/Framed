@@ -7,6 +7,24 @@ import pytest
 from db.conn import Role, tx
 from db.repo import analytics as repo
 
+def requires_mart(*names: str) -> None:
+    """Skip unless dbt has built these.
+
+    Without this the warehouse assertions raise UndefinedTable on the ordinary
+    run, because pytest runs before `dbt build` -- and it has to: the marts are
+    built from the traffic these tests generate. Marked `marts` and re-run after
+    the warehouse is built, which is the pass that actually asserts.
+    """
+    with tx(Role.SUPER) as cur:
+        cur.execute(
+            "select m from unnest(%s::text[]) m where to_regclass('mart.' || m) is null",
+            (list(names),),
+        )
+        missing = [row["m"] for row in cur.fetchall()]
+    if missing:
+        pytest.skip(f"marts not built: {', '.join(missing)}")
+
+
 PAGES = [
     ("/insights/", b"Sessions"),
     ("/insights/behaviour", b"Most visited pages"),
@@ -61,6 +79,7 @@ def test_product_sort_options_do_not_reach_sql(as_role):
 # The numbers
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.marts
 def test_funnel_is_monotonic():
     steps = repo.funnel(365)
     if not steps:
@@ -69,6 +88,7 @@ def test_funnel_is_monotonic():
     assert values == sorted(values, reverse=True), f"funnel goes back up: {values}"
 
 
+@pytest.mark.marts
 def test_funnel_reconciles_with_the_sessions_mart():
     steps = repo.funnel(365)
     if not steps:
@@ -136,8 +156,10 @@ def test_the_beacon_receives_the_same_session_id_the_cart_uses(client):
     assert f'data-sid="{sid}"' in body
 
 
+@pytest.mark.marts
 def test_engaged_time_is_never_greater_than_elapsed_time():
     """Visible seconds cannot exceed wall-clock, or dwell tracking is double-counting."""
+    requires_mart("mart_visitor_sessions")
     with tx(Role.SUPER) as cur:
         cur.execute(
             """select count(*) as n from mart.mart_visitor_sessions
@@ -146,7 +168,9 @@ def test_engaged_time_is_never_greater_than_elapsed_time():
         assert cur.fetchone()["n"] == 0
 
 
+@pytest.mark.marts
 def test_page_engagement_has_no_impossible_percentages():
+    requires_mart("mart_page_engagement")
     with tx(Role.SUPER) as cur:
         cur.execute(
             """select count(*) as n from mart.mart_page_engagement
@@ -155,6 +179,7 @@ def test_page_engagement_has_no_impossible_percentages():
         assert cur.fetchone()["n"] == 0
 
 
+@pytest.mark.marts
 def test_every_ranked_seller_has_a_band():
     """No product may fall through the banding into a null.
 
@@ -162,6 +187,7 @@ def test_every_ranked_seller_has_a_band():
     against the table now -- a draft fixture product added afterwards is
     correctly absent, and asserting otherwise would just make the test flap.
     """
+    requires_mart("mart_seller_ranking")
     with tx(Role.SUPER) as cur:
         cur.execute("select count(*) as n from mart.mart_seller_ranking where band is null")
         assert cur.fetchone()["n"] == 0
@@ -174,8 +200,10 @@ def test_every_ranked_seller_has_a_band():
     assert 0 < ranked <= active, f"{ranked} ranked products against {active} active"
 
 
+@pytest.mark.marts
 def test_abandoned_interest_excludes_products_that_were_bought():
     """A product bought in the same session must not appear as abandoned by it."""
+    requires_mart("mart_abandoned_interest")
     with tx(Role.SUPER) as cur:
         cur.execute(
             """select count(*) as n
@@ -223,8 +251,15 @@ def test_a_missing_mart_yields_an_empty_result_not_an_exception():
     assert repo.take_failures() == []
 
 
+@pytest.mark.marts
 def test_a_broken_query_is_reported_rather_than_shown_as_zero():
-    """The failure that matters: an empty panel the owner reads as a quiet week."""
+    """The failure that matters: an empty panel the owner reads as a quiet week.
+
+    Needs the mart to exist: _query short-circuits on an unbuilt one and reports
+    nothing, which is right -- an unbuilt mart is a fresh install, not an outage.
+    The unconditional coverage of that path is the two tests below.
+    """
+    requires_mart("mart_visitor_sessions")
     repo.take_failures()
     assert repo._query("select * from mart.mart_visitor_sessions where nope = 1",
                        mart="mart_visitor_sessions") == []
