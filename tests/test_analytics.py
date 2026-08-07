@@ -7,6 +7,7 @@ import pytest
 from db.conn import Role, tx
 from db.repo import analytics as repo
 
+
 def requires_mart(*names: str) -> None:
     """Skip unless dbt has built these.
 
