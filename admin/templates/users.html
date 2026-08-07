@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>2FA</th><th>Last seen</th><th></th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td data-label="Name">{{ u.name }}{% if u.archived_at %} <span class="chip chip--danger">archived</span>{% endif %}</td>
+            <td data-label="Email">{{ u.email }}</td>
+            <td data-label="Role"><span class="chip">{{ u.role }}</span></td>
+            <td data-label="2FA">
+              {% if u.totp_enabled %}<span class="chip chip--ok">on</span>
+              {% elif u.role in ('owner', 'manager') %}<span class="chip chip--warn">enrols at next sign-in</span>
+              {% else %}<span class="chip">off</span>{% endif %}
+            </td>
+            <td data-label="Last seen">{{ u.last_login_at|ago }}
+              {% if u.locked_until %}<br><span class="chip chip--danger">locked</span>{% endif %}
+            </td>
+            <td data-label="">
+              <div style="display:flex;gap:var(--s2);flex-wrap:wrap">
+                <form method="post" action="{{ url_for('people.change_role', user_id=u.id) }}" style="display:flex;gap:var(--s2)">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <label class="sr-only" for="role-{{ u.id }}">Role for {{ u.name }}</label>
+                  <select id="role-{{ u.id }}" name="role">
+                    {% for r in ['owner', 'manager', 'inventory', 'fulfilment'] %}
+                      <option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn--sm" type="submit">Set</button>
+                </form>
+                {% if u.totp_enabled %}
+                <form method="post" action="{{ url_for('people.reset_two_factor', user_id=u.id) }}">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <button class="btn btn--sm" type="submit"
+                          title="Clears the enrolment and signs {{ u.name }} out. They keep their password and set up a new authenticator at their next sign-in.">
+                    Reset 2FA
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<p class="metric__foot">Changing a role signs that person out of every device immediately.</p>
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Add a staff member</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('people.create_user') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field-row">
+        <div class="field">
+          <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
+          <input id="name" name="name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="email">Work email <span class="req" aria-hidden="true">*</span></label>
+          <input id="email" name="email" type="email" required autocapitalize="off">
+        </div>
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="fulfilment">Fulfilment — production board and shipping</option>
+            <option value="inventory">Inventory — stock and catalog</option>
+            <option value="manager">Manager — everything except staff and settings</option>
+            <option value="owner">Owner — everything</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="password">Temporary password <span class="req" aria-hidden="true">*</span></label>
+        <input id="password" name="password" type="password" required minlength="12" autocomplete="new-password">
+        <span class="hint">At least 12 characters. Owner and manager accounts must set up 2FA at first sign-in.</span>
+      </div>
+      <button class="btn btn--primary" type="submit">{{ icon('plus', 16) }} Create account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

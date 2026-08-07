@@ -1,0 +1,19 @@
+{% from "_icons.html" import icon %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ page_title }} · Framed Obsessions</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+
+<main class="auth-page">
+  <div class="auth-card">
+    <div class="panel">
+      <div class="panel__body" style="text-align:center">
+        <p style="font-family:var(--mono);font-size:42px;font-weight:700;margin:0;color:var(--text-faint)">{{ code }}</p>
+        <h1 style="font-size:18px;margin:var(--s3) 0 var(--s2)">{{ title }}</h1>
+        <p style="color:var(--text-muted);font-size:14px;margin-top:0">{{ detail }}</p>
+        <a class="btn btn--primary" href="{{ url_for('dashboard.index') }}">{{ icon('arrow', 16) }} Back to the board</a>
+      </div>
+    </div>
+  </div>
+</main>

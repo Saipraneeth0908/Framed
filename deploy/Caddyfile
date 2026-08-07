@@ -1,0 +1,55 @@
+# Automatic TLS, three hostnames, one process.
+#
+# The admin hostname is expected to sit behind Cloudflare Access or an IP
+# allowlist as well. Authentication in the app is defence in depth, not the only
+# gate -- unauthenticated internet should not reach the admin process at all.
+
+framedobsessions.com, www.framedobsessions.com {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	# Hashed asset URLs are safe to cache hard; HTML is not.
+	@static path /static/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	reverse_proxy web:8000 {
+		header_up X-Request-ID {http.request.header.X-Request-ID}
+	}
+}
+
+admin.framedobsessions.com {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+	# Second gate. Remove only if Cloudflare Access fronts this hostname.
+	@blocked not remote_ip {$ADMIN_ALLOWED_IPS:0.0.0.0/0}
+	respond @blocked 403
+
+	# Prometheus scrapes admin:8001/metrics over the internal network. Nothing
+	# on the internet has any business reading it.
+	@metrics path /metrics
+	respond @metrics 404
+
+	reverse_proxy admin:8001
+}
+
+e.framedobsessions.com {
+	encode gzip
+	header -Server
+	# Write-only. Nothing here reads, so nothing here needs a slow path.
+	rate_limit {
+		zone beacons {
+			key {remote_host}
+			events 120
+			window 1m
+		}
+	}
+	reverse_proxy collector:8002
+}

@@ -27,6 +27,7 @@
               </div>
 
               <form method="POST" action="/cart/update" class="cartActions">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="idx" value="{{ loop.index0 }}"/>
                 <input class="qty" name="qty" type="number" min="0" value="{{ item.qty }}"/>
                 <button class="btn btn--ghost" type="submit">Update</button>
@@ -35,6 +36,7 @@
           {% endfor %}
 
           <form method="POST" action="/cart/clear" class="row">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}"/>
             <button class="btn btn--ghost" type="submit">Clear cart</button>
           </form>
         </div>

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if discounts %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Code</th><th>Type</th><th class="right">Value</th><th class="right">Minimum</th>
+                   <th class="right">Used</th><th>Window</th><th>State</th></tr></thead>
+        <tbody>
+          {% for d in discounts %}
+          <tr>
+            <td data-label="Code" class="mono">{{ d.code }}</td>
+            <td data-label="Type">{{ d.kind|replace('_', ' ') }}</td>
+            <td data-label="Value" class="right num">{% if d.kind == 'percent' %}{{ d.value }}%{% else %}{{ d.value|money }}{% endif %}</td>
+            <td data-label="Minimum" class="right money">{{ d.min_subtotal_cents|money }}</td>
+            <td data-label="Used" class="right num">{{ d.redemptions }}{% if d.max_redemptions %} / {{ d.max_redemptions }}{% endif %}</td>
+            <td data-label="Window">{{ d.starts_at.strftime('%d %b') if d.starts_at else 'now' }} → {{ d.ends_at.strftime('%d %b') if d.ends_at else 'open' }}</td>
+            <td data-label="State"><span class="chip {{ 'chip--ok' if d.active else '' }}">{{ 'active' if d.active else 'paused' }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><p class="empty__title">No discount codes</p><p>The 3-for-10% bundle runs automatically and does not need a code.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">New code</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('growth.create_discount') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field-row">
+        <div class="field">
+          <label for="code">Code <span class="req" aria-hidden="true">*</span></label>
+          <input id="code" name="code" type="text" required placeholder="FRAMEIT" autocapitalize="characters">
+        </div>
+        <div class="field">
+          <label for="kind">Type</label>
+          <select id="kind" name="kind">
+            <option value="percent">Percent off</option>
+            <option value="fixed">Fixed amount off</option>
+            <option value="free_shipping">Free shipping</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="value">Value</label>
+          <input id="value" name="value" type="text" inputmode="decimal" placeholder="10">
+          <span class="hint">Percent points, or dollars for a fixed amount.</span>
+        </div>
+        <div class="field">
+          <label for="min_subtotal">Minimum subtotal</label>
+          <input id="min_subtotal" name="min_subtotal" type="text" inputmode="decimal" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="max_redemptions">Redemption cap</label>
+          <input id="max_redemptions" name="max_redemptions" type="number" min="1" placeholder="unlimited">
+        </div>
+      </div>
+      <button class="btn btn--primary" type="submit">{{ icon('plus', 16) }} Create code</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -10,3 +10,9 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  # Warehouse assertions. They skip on the ordinary run, because the marts are
+  # built from the traffic that run generates; CI re-runs `-m marts` after
+  # `dbt build`, which is the pass where they mean something.
+  "marts: asserts against a built mart",
+]

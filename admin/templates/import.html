@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+{% if result %}
+  <div class="alert {{ 'alert--ok' if not result.unknown and not result.rejected else 'alert--error' }}">
+    {{ icon('check' if not result.unknown and not result.rejected else 'alert') }}
+    <span>
+      <strong>{{ result.applied }} of {{ result.submitted }} rows applied.</strong>
+      {% if result.unknown %}<br>Unknown SKUs ({{ result.unknown|length }}):
+        <span class="mono">{{ result.unknown[:20]|join(', ') }}{% if result.unknown|length > 20 %} …{% endif %}</span>{% endif %}
+      {% if result.rejected %}<br>Rejected: {{ result.rejected[:10]|join('; ') }}{% endif %}
+    </span>
+  </div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel__head"><h2 class="panel__title">Round-trip a price change</h2></div>
+  <div class="panel__body">
+    <ol style="color:var(--text-muted);line-height:1.9;padding-left:1.2em;max-width:70ch">
+      <li>Export the current variants, edit them in a spreadsheet, import the file back.</li>
+      <li>Only <span class="mono">sku</span> is required. Include
+          <span class="mono">price_cents</span>, <span class="mono">sale_price_cents</span> or
+          <span class="mono">status</span> to change them; leave a cell blank to leave it alone.</li>
+      <li>An unrecognised SKU is reported back, never silently skipped — that is how a
+          price change goes out half-applied.</li>
+    </ol>
+
+    <a class="btn" href="{{ url_for('catalog.export_variants_csv') }}">{{ icon('download', 16) }} Export variants.csv</a>
+
+    <form method="post" enctype="multipart/form-data" style="margin-top:var(--s5)">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="file">CSV file <span class="req" aria-hidden="true">*</span></label>
+        <input id="file" name="file" type="file" accept=".csv,text/csv" required>
+        <span class="hint">UTF-8, up to 5000 rows. Every change is written to the audit log.</span>
+      </div>
+      <button class="btn btn--primary" type="submit">{{ icon('arrow', 16) }} Apply changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block actions %}
+  <a class="btn btn--sm" href="{{ url_for('catalog.export_csv') }}">{{ icon('download', 16) }} CSV</a>
+  {% if can(Perm.PRICE_EDIT) %}
+    <a class="btn btn--sm" href="{{ url_for('catalog.import_form') }}">{{ icon('arrow', 16) }} Bulk prices</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filter by category">
+    <a href="{{ url_for('catalog.products') }}" {% if not category %}aria-current="page"{% endif %}>All</a>
+    {% for c in ['hotwheels', 'cricket', 'anime', 'nature', 'motivation'] %}
+      <a href="{{ url_for('catalog.products', category=c) }}" {% if category == c %}aria-current="page"{% endif %}>{{ c|capitalize }}</a>
+    {% endfor %}
+  </nav>
+  <form method="get" role="search">
+    <label class="sr-only" for="q">Search products</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Name, slug or brand">
+    <button class="btn" type="submit">{{ icon('search', 16) }}<span class="sr-only">Search</span></button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th></th><th>Product</th><th>Category</th><th>Status</th><th class="right">From</th><th class="right">Variants</th></tr></thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <td data-label="">
+              {% if p.poster %}<img class="thumb" src="{{ p.poster }}" alt="" loading="lazy" width="40" height="40">
+              {% else %}<span class="thumb" aria-hidden="true"></span>{% endif %}
+            </td>
+            <td data-label="Product">
+              <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}"><strong>{{ p.name }}</strong></a><br>
+              <small class="mono" style="color:var(--text-faint)">{{ p.slug }}</small>
+              {% if p.featured %} <span class="chip chip--info">featured</span>{% endif %}
+            </td>
+            <td data-label="Category">{{ p.category }}</td>
+            <td data-label="Status">
+              <span class="chip {% if p.status == 'active' %}chip--ok{% elif p.status == 'archived' %}chip--danger{% else %}chip--warn{% endif %}">{{ p.status }}</span>
+            </td>
+            <td data-label="From" class="right money">{{ p.base_price_cents|money }}</td>
+            <td data-label="Variants" class="right num">{{ p.variant_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,276 @@
+{#
+  Server-rendered SVG charts. No chart library, no JS, no external requests --
+  the CSP forbids all three, and a dashboard that needs 90KB of JavaScript to
+  draw eight bars is a dashboard that breaks when the CDN does.
+
+  Hover uses <title>, which browsers render as a native tooltip with no script
+  at all. Every chart also has a table fallback, so the data is reachable by a
+  screen reader and by anyone who prefers numbers.
+
+  Colours come from the validated categorical palette in admin.css
+  (--viz-1..--viz-5). That order passed the lightness band, chroma floor,
+  colour-vision-deficiency separation, normal-vision floor and contrast checks
+  against this exact dark surface. Do not reorder or add a sixth by eye.
+#}
+
+{%- macro fmt(n) -%}
+{%- if n is none -%}—{%- elif n >= 1000000 -%}{{ (n / 1000000)|round(1) }}M
+{%- elif n >= 1000 -%}{{ (n / 1000)|round(1) }}k{%- else -%}{{ n }}{%- endif -%}
+{%- endmacro -%}
+
+{%- macro dur(seconds) -%}
+{%- if not seconds -%}0s
+{%- elif seconds >= 3600 -%}{{ (seconds // 3600)|int }}h {{ ((seconds % 3600) // 60)|int }}m
+{%- elif seconds >= 60 -%}{{ (seconds // 60)|int }}m {{ (seconds % 60)|int }}s
+{%- else -%}{{ seconds|int }}s{%- endif -%}
+{%- endmacro -%}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Time series. One series = no legend (the title names it).           -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro timeseries(points, label_key, value_key, title, unit='', height=170, slot=1) %}
+  {# Postgres hands back numeric as Decimal, which will not multiply with the
+     floats used for geometry. Coerce once, here, rather than at every call. #}
+  {%- set values = points | map(attribute=value_key) | select('number') | map('float') | list -%}
+  {%- set peak = (values | max) if values else 0.0 -%}
+  {%- set peak = peak if peak and peak > 0 else 1.0 -%}
+  {%- set n = points | length -%}
+  {%- set w = 720 -%}
+  {%- set h = height -%}
+  {%- set pad = 26 -%}
+  {%- set step = ((w - pad * 2) / (n - 1)) if n > 1 else 0 -%}
+  <figure class="chart">
+    <figcaption class="chart__title">{{ title }}</figcaption>
+    {% if n == 0 %}
+      <p class="chart__empty">No data in this window yet.</p>
+    {% else %}
+    <svg class="chart__svg" viewBox="0 0 {{ w }} {{ h }}" role="img"
+         aria-label="{{ title }}. Peak {{ peak }}{{ unit }}.">
+      {# Recessive gridlines: present enough to read a value against, quiet
+         enough that they never compete with the data. #}
+      {% for frac in [0, 0.5, 1] %}
+        {% set y = pad + (h - pad * 2) * frac %}
+        <line x1="{{ pad }}" y1="{{ y }}" x2="{{ w - pad }}" y2="{{ y }}" class="chart__grid"/>
+        <text x="2" y="{{ y + 4 }}" class="chart__axis">{{ fmt((peak * (1 - frac))|round|int) }}</text>
+      {% endfor %}
+
+      {%- set coords = [] -%}
+      {%- for p in points -%}
+        {%- set x = pad + loop.index0 * step -%}
+        {%- set y = (h - pad) - ((p[value_key] or 0)|float / peak) * (h - pad * 2) -%}
+        {%- set _ = coords.append(x|round(1)|string ~ ',' ~ y|round(1)|string) -%}
+      {%- endfor -%}
+
+      {# Area under the line reads as volume; the line itself carries the shape. #}
+      <polygon class="chart__area chart__area--{{ slot }}"
+               points="{{ pad }},{{ h - pad }} {{ coords | join(' ') }} {{ pad + (n - 1) * step }},{{ h - pad }}"/>
+      <polyline class="chart__line chart__line--{{ slot }}" points="{{ coords | join(' ') }}"/>
+
+      {% for p in points %}
+        {% set x = pad + loop.index0 * step %}
+        {% set y = (h - pad) - ((p[value_key] or 0)|float / peak) * (h - pad * 2) %}
+        {# Hit target far larger than the dot, so hovering is not a precision test. #}
+        <rect x="{{ (x - step / 2)|round(1) }}" y="{{ pad }}" width="{{ (step if step else 12)|round(1) }}"
+              height="{{ h - pad * 2 }}" class="chart__hit">
+          <title>{{ p[label_key] }}: {{ p[value_key] }}{{ unit }}</title>
+        </rect>
+        {% if n <= 32 %}<circle cx="{{ x|round(1) }}" cy="{{ y|round(1) }}" r="2.5" class="chart__dot chart__dot--{{ slot }}"/>{% endif %}
+      {% endfor %}
+
+      {# Only the ends and middle are labelled -- a date under every point is
+         unreadable and adds nothing. #}
+      {% for idx in [0, (n // 2), n - 1] | unique %}
+        {% if points[idx] is defined %}
+          <text x="{{ (pad + idx * step)|round(1) }}" y="{{ h - 6 }}"
+                class="chart__axis chart__axis--x"
+                text-anchor="{{ 'start' if idx == 0 else ('end' if idx == n - 1 else 'middle') }}">
+            {{ points[idx][label_key] }}
+          </text>
+        {% endif %}
+      {% endfor %}
+    </svg>
+    {% endif %}
+  </figure>
+{% endmacro %}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Ranked horizontal bars. The right form for "which of these is       -#}
+{#- biggest" -- labels stay horizontal and readable at any length.      -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro ranked(rows, label_key, value_key, title, unit='', slot=1, secondary_key=none,
+                secondary_label='', limit=10, money=false) %}
+  {%- set rows = rows[:limit] -%}
+  {%- set values = rows | map(attribute=value_key) | select('number') | map('float') | list -%}
+  {%- set peak = (values | max) if values else 0.0 -%}
+  {%- set peak = peak if peak and peak > 0 else 1.0 -%}
+  <figure class="chart">
+    <figcaption class="chart__title">{{ title }}</figcaption>
+    {% if not rows %}
+      <p class="chart__empty">Nothing recorded yet.</p>
+    {% else %}
+    <div class="ranked">
+      {% for row in rows %}
+        {% set value = row[value_key] or 0 %}
+        {% set width = (100.0 * (value|float) / peak)|round(1) %}
+        <div class="ranked__row">
+          <span class="ranked__label" title="{{ row[label_key] }}">{{ row[label_key] }}</span>
+          <span class="ranked__track">
+            <span class="ranked__bar ranked__bar--{{ slot }}"
+                  data-w="{{ width }}" style="width:{{ width }}%"></span>
+          </span>
+          <span class="ranked__value num">
+            {% if money %}{{ value|money }}{% else %}{{ value }}{{ unit }}{% endif %}
+          </span>
+          {% if secondary_key %}
+            <span class="ranked__secondary num" title="{{ secondary_label }}">
+              {{ row[secondary_key] if row[secondary_key] is not none else '—' }}
+            </span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </figure>
+{% endmacro %}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Funnel. Drop between steps is the number that matters, so it is     -#}
+{#- printed rather than left to be inferred from two bar widths.        -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro funnel(steps, title) %}
+  <figure class="chart">
+    <figcaption class="chart__title">{{ title }}</figcaption>
+    {% if not steps %}
+      <p class="chart__empty">No sessions recorded yet.</p>
+    {% else %}
+    <ol class="funnel">
+      {% for step in steps %}
+        <li class="funnel__step">
+          <div class="funnel__head">
+            <span class="funnel__label">{{ step.label }}</span>
+            <span class="funnel__value num">{{ step.value }}</span>
+            <span class="funnel__pct num">{{ step.pct_of_top }}%</span>
+          </div>
+          <div class="funnel__track">
+            <div class="funnel__bar" style="width:{{ step.pct_of_top }}%"></div>
+          </div>
+          {% if not loop.first and step.drop %}
+            <p class="funnel__drop">
+              &minus;{{ step.drop }} lost here ({{ step.drop_pct }}% of the previous step)
+            </p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </figure>
+{% endmacro %}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Heatmap: sequential, ONE hue light to dark. Never a rainbow --      -#}
+{#- a rainbow implies categories where there is only magnitude.         -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro heatmap(cells, title, value_key='sessions') %}
+  {%- set values = cells | map(attribute=value_key) | list -%}
+  {%- set peak = (values | max) if values else 0 -%}
+  {%- set peak = peak if peak and peak > 0 else 1 -%}
+  <figure class="chart">
+    <figcaption class="chart__title">{{ title }}</figcaption>
+    {% if not cells %}
+      <p class="chart__empty">No sessions recorded yet.</p>
+    {% else %}
+    <div class="heatmap" role="img" aria-label="{{ title }}. Busiest cell {{ peak }}.">
+      <div class="heatmap__hours" aria-hidden="true">
+        <span></span>
+        {% for h in range(0, 24, 3) %}<span class="heatmap__hour">{{ '%02d'|format(h) }}</span>{% endfor %}
+      </div>
+      {% for dow in range(7) %}
+        <div class="heatmap__row">
+          <span class="heatmap__day">{{ (cells | selectattr('dow', 'equalto', dow) | first).day_name }}</span>
+          <span class="heatmap__cells">
+            {% for cell in cells if cell.dow == dow %}
+              {% set v = cell[value_key] or 0 %}
+              {# Five steps of one hue. Bucketed, not continuous: the eye cannot
+                 read a continuous ramp back to a number anyway. #}
+              {% set step = 0 if v == 0 else (1 if v <= peak * 0.25 else (2 if v <= peak * 0.5 else (3 if v <= peak * 0.75 else 4))) %}
+              <span class="heatmap__cell heatmap__cell--{{ step }}"
+                    title="{{ cell.day_name }} {{ '%02d'|format(cell.hour) }}:00 — {{ cell.sessions }} sessions, {{ cell.purchases }} purchases"></span>
+            {% endfor %}
+          </span>
+        </div>
+      {% endfor %}
+      <p class="heatmap__legend">
+        <span class="heatmap__legend-label">quiet</span>
+        {% for s in range(5) %}<span class="heatmap__cell heatmap__cell--{{ s }}"></span>{% endfor %}
+        <span class="heatmap__legend-label">busiest ({{ peak }})</span>
+      </p>
+    </div>
+    {% endif %}
+  </figure>
+{% endmacro %}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Donut. Capped at five slices; past that the palette stops being     -#}
+{#- distinguishable and a ranked bar is the honest form.                -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro donut(rows, label_key, value_key, title) %}
+  {%- set total = rows | map(attribute=value_key) | sum -%}
+  <figure class="chart chart--split">
+    <figcaption class="chart__title">{{ title }}</figcaption>
+    {% if not total %}
+      <p class="chart__empty">Nothing recorded yet.</p>
+    {% else %}
+    <div class="donut-wrap">
+      <svg class="donut" viewBox="0 0 42 42" role="img" aria-label="{{ title }}">
+        {%- set ns = namespace(offset=25) -%}
+        {% for row in rows[:5] %}
+          {% set pct = 100 * (row[value_key] or 0) / total %}
+          <circle class="donut__seg donut__seg--{{ loop.index }}" cx="21" cy="21" r="15.9"
+                  stroke-dasharray="{{ pct|round(2) }} {{ (100 - pct)|round(2) }}"
+                  stroke-dashoffset="{{ ns.offset|round(2) }}">
+            <title>{{ row[label_key] }}: {{ row[value_key] }} ({{ pct|round(1) }}%)</title>
+          </circle>
+          {%- set ns.offset = ns.offset - pct -%}
+        {% endfor %}
+        <text x="21" y="20.5" class="donut__total">{{ fmt(total) }}</text>
+        <text x="21" y="24.5" class="donut__caption">total</text>
+      </svg>
+      {# Legend is always present for two or more series -- identity is never
+         carried by colour alone. #}
+      <ul class="donut__legend">
+        {% for row in rows[:5] %}
+          <li>
+            <span class="donut__swatch donut__swatch--{{ loop.index }}" aria-hidden="true"></span>
+            <span class="donut__key">{{ row[label_key]|replace('_', ' ') }}</span>
+            <span class="donut__num num">{{ row[value_key] }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </figure>
+{% endmacro %}
+
+{#- ------------------------------------------------------------------ -#}
+{#- Sparkline and stat tile                                             -#}
+{#- ------------------------------------------------------------------ -#}
+{% macro sparkline(values, slot=1) %}
+  {%- set peak = (values | max) if values else 0 -%}
+  {%- set peak = peak if peak and peak > 0 else 1 -%}
+  {%- set n = values | length -%}
+  {% if n > 1 %}
+  <svg class="spark-mini" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+    <polyline class="chart__line chart__line--{{ slot }}"
+              points="{% for v in values %}{{ (loop.index0 * 100 / (n - 1))|round(1) }},{{ (22 - (v / peak) * 20)|round(1) }} {% endfor %}"/>
+  </svg>
+  {% endif %}
+{% endmacro %}
+
+{% macro stat(label, value, foot='', tone='', spark=none) %}
+  <div class="metric {{ 'metric--' ~ tone if tone }}">
+    <span class="metric__label">{{ label }}</span>
+    <span class="metric__value num">{{ value }}</span>
+    {% if spark %}{{ sparkline(spark) }}{% endif %}
+    {% if foot %}<span class="metric__foot">{{ foot }}</span>{% endif %}
+  </div>
+{% endmacro %}

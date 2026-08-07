@@ -15,6 +15,7 @@
       </div>
     {% else %}
       <form class="panel" method="POST">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}"/>
         <div class="field">
           <label for="contact-name">Name</label>
           <input class="input" id="contact-name" name="name" autocomplete="name" placeholder="Your name"/>

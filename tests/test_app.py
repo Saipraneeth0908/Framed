@@ -1,13 +1,6 @@
 import pytest
 
-from main import app, compute_cart_totals, normalize_config, parse_quantity
-
-
-@pytest.fixture()
-def client():
-    app.config.update(TESTING=True, SECRET_KEY="test-secret")
-    with app.test_client() as test_client:
-        yield test_client
+from web.app import compute_cart_totals, normalize_config, parse_quantity
 
 
 @pytest.mark.parametrize(
@@ -64,14 +57,20 @@ def test_bundle_discount():
 
 
 def test_negative_cart_add_is_ignored(client):
+    # The cart moved into store.cart_items; the session holds only a token, and
+    # a rejected add must not even create the cart row.
     client.post("/cart/add", data={"slug": "mclaren-p1-red", "qty": "-2"})
     with client.session_transaction() as session:
-        assert session["cart"] == []
+        assert "cart_token" not in session
 
 
 def test_checkout_requires_cart(client):
     response = client.post(
-        "/checkout", data={"name": "Driver", "email": "driver@example.com", "address": "1 Track Way"}
+        "/checkout",
+        data={
+            "name": "Driver", "email": "driver@example.com", "street": "1 Track Way",
+            "city": "Woking", "state": "CA", "zip": "94016",
+        },
     )
     assert response.status_code == 200
     assert b"Your cart is empty" in response.data

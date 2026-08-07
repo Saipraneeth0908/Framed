@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filter orders">
+    {% for key, label in [('', 'All'), ('to_fulfil', 'To fulfil'), ('unpaid', 'Unpaid'), ('refunded', 'Refunded'), ('cancelled', 'Cancelled')] %}
+      <a href="{{ url_for('orders.list_orders', status=key, q=q) }}" {% if status == key %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <form method="get" role="search">
+    <input type="hidden" name="status" value="{{ status }}">
+    <label class="sr-only" for="q">Search orders</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Order number, email or name">
+    <button class="btn" type="submit">{{ icon('search', 16) }}<span class="sr-only">Search</span></button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if orders %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Order</th><th>Placed</th><th>Customer</th><th>Payment</th>
+            <th>Fulfilment</th><th>Production</th><th class="right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td data-label="Order">
+              <a class="mono" href="{{ url_for('orders.order_detail', order_id=o.id) }}">{{ o.order_no }}</a>
+              <span class="badge badge--quiet">{{ o.line_count }}</span>
+            </td>
+            <td data-label="Placed">{{ o.placed_at|ago }}</td>
+            <td data-label="Customer">{{ o.ship_name or o.email }}</td>
+            <td data-label="Payment">
+              <span class="chip {% if o.payment_status == 'paid' %}chip--ok{% elif o.payment_status == 'failed' %}chip--danger{% else %}chip--warn{% endif %}">
+                {{ o.payment_status|replace('_', ' ') }}
+              </span>
+            </td>
+            <td data-label="Fulfilment">
+              <span class="chip {% if o.fulfilment_status in ('fulfilled','delivered') %}chip--ok{% elif o.fulfilment_status == 'returned' %}chip--danger{% else %}chip--info{% endif %}">
+                {{ o.fulfilment_status|replace('_', ' ') }}
+              </span>
+            </td>
+            <td data-label="Production">
+              {% if o.cancelled_at %}<span class="chip chip--danger">cancelled</span>
+              {% elif o.production_rollup %}<span class="chip">{{ o.production_rollup }}</span>
+              {% else %}<span class="chip">—</span>{% endif %}
+            </td>
+            <td data-label="Total" class="right money">
+              {{ o.total_cents|money }}
+              {% if o.refunded_cents %}<br><small style="color:var(--danger)">−{{ o.refunded_cents|money }}</small>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty__title">Nothing matches</p>
+      <p>{% if q %}No order matches “{{ q }}”.{% else %}No orders in this state yet.{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if orders|length == 50 or page > 1 %}
+<div class="btn-row" style="justify-content:space-between">
+  {% if page > 1 %}<a class="btn" href="{{ url_for('orders.list_orders', status=status, q=q, page=page-1) }}">Previous</a>{% else %}<span></span>{% endif %}
+  {% if orders|length == 50 %}<a class="btn" href="{{ url_for('orders.list_orders', status=status, q=q, page=page+1) }}">Next</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

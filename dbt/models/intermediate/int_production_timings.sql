@@ -1,0 +1,21 @@
+-- Station timings are derived from the audit log rather than a second bespoke
+-- events table: the trigger already records every production_status change with
+-- a before and after, so a dedicated table would be a duplicate source of truth.
+with transitions as (
+    select
+        (a.after ->> 'id')::bigint                       as order_item_id,
+        a.before ->> 'production_status'                 as from_station,
+        a.after  ->> 'production_status'                 as to_station,
+        a.created_at
+    from {{ source('ops', 'audit_log') }} a
+    where a.entity = 'store.order_items'
+      and a.action = 'update'
+      and a.before ->> 'production_status' is distinct from a.after ->> 'production_status'
+)
+select
+    order_item_id,
+    from_station,
+    to_station,
+    created_at,
+    created_at - lag(created_at) over (partition by order_item_id order by created_at) as time_in_previous_station
+from transitions

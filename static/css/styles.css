@@ -425,3 +425,175 @@ html[data-theme] .product-card    { border: 1px solid color-mix(in srgb, var(--o
 .thumb { width: 84px; height: 84px; border-radius: var(--radius-sm); background-position: center; background-size: cover; }
 @media (max-width: 860px) { .product-lead { grid-template-columns: 1fr; } .product-lead__media { position: static; } }
 @media (max-width: 640px) { .spec-table { grid-template-columns: 1fr; column-gap: 0; } .product-highlights { grid-template-columns: 1fr; } }
+
+/* === Liquid glass: buttons, dropdowns, fields ==============================
+   Texture change only. Every tint below is the component's EXISTING palette
+   colour, just translucent — orange stays orange, ink stays ink, white stays
+   white. The glass read is built from five stacked cues, no new hues:
+     1. backdrop blur + saturate + brightness   — what sits behind bends through
+     2. a thick specular bevel (inset shadows)  — lit top-left edge, softer return
+     3. ::before lens gloss                     — dome highlight top, catch light bottom
+     4. ::after streak                          — slides across on hover
+     5. SVG displacement on the backdrop        — real edge refraction, Chromium only
+   Alphas stay high on coloured surfaces: text contrast must not fall below
+   what it is today. */
+/* === Liquid glass: buttons, dropdowns, fields ==============================
+   Texture change only. Every tint below is the component's EXISTING palette
+   colour, just translucent — orange stays orange, ink stays ink, white stays
+   white. The glass read is built from five stacked cues, no new hues:
+     1. backdrop blur + saturate + brightness   — what sits behind bends through
+     2. a thick specular bevel (inset shadows)  — lit top-left edge, softer return
+     3. ::before lens gloss                     — dome highlight top, catch light bottom
+     4. ::after streak                          — slides across on hover
+     5. SVG displacement on the backdrop        — real edge refraction, Chromium only
+   Alphas stay high on coloured surfaces: text contrast must not fall below
+   what it is today. */
+.glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; }  /* the <filter> host in base.html */
+:root {
+  --glass-blur: 16px;
+  --glass-tint: rgba(255,255,255,.4);
+  --glass-hair: rgba(255,255,255,.3);
+  --glass-rim: rgba(255,255,255,.95);
+  --glass-rim-soft: rgba(255,255,255,.7);
+  --glass-drop: 0 1px 1px rgba(0,0,0,.1), 0 5px 12px -8px rgba(0,0,0,.34), 0 14px 30px -20px rgba(0,0,0,.4);
+  --glass-gloss: .55;
+  --glass-refract: rgba(0,0,0,.3);
+}
+.button,.btn,.icon-button,.cat-icon,.cat-switch > summary,.cat-switch__menu,
+.tab-list button,.active-filters button,.select,.input,.qty {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.7) brightness(1.02);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.7) brightness(1.02);
+  /* Thin lit edge + one refracted dark band at the bottom. Deliberately NOT a
+     big white dome: a dome washes the tint out and takes label contrast with
+     it. Glass is mostly clear with a bright rim. */
+  box-shadow:
+    inset 0 0 0 1px var(--glass-hair),
+    inset 0 1.5px 0 -.5px var(--glass-rim),
+    inset 0 -1.5px 0 -.5px var(--glass-rim-soft),
+    inset 0 9px 12px -12px var(--glass-rim),
+    inset 0 -11px 16px -14px var(--glass-refract),
+    var(--glass-drop);
+  transition: background var(--fast),box-shadow var(--fast),transform var(--fast),
+              -webkit-backdrop-filter var(--fast),backdrop-filter var(--fast);
+}
+/* .cat-switch__menu is already absolute — leave its position alone. isolate so
+   both z-index:-1 glass layers land above the tint and below the label. */
+.button,.btn,.cat-icon,.cat-switch > summary,.tab-list button,.active-filters button { position: relative; }
+.button,.btn,.icon-button,.cat-icon,.cat-switch > summary,.cat-switch__menu,
+.tab-list button,.active-filters button { isolation: isolate; }
+/* Lens gloss + catch light. Replaced elements (select/input) can't host
+   pseudo-elements, so they run on tint + bevel alone. */
+.button::before,.btn::before,.icon-button::before,.cat-icon::before,
+.cat-switch > summary::before,.cat-switch__menu::before,
+.tab-list button::before,.active-filters button::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  opacity: var(--glass-gloss);
+  background:
+    linear-gradient(to bottom,rgba(255,255,255,.5),rgba(255,255,255,.07) 36%,transparent 54%),
+    radial-gradient(120% 58% at 50% 132%,rgba(255,255,255,.3),transparent 62%);
+}
+/* Travelling specular streak. */
+.button::after,.btn::after,.icon-button::after,.cat-icon::after,
+.cat-switch > summary::after,.cat-switch__menu::after,
+.tab-list button::after,.active-filters button::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(122deg,transparent 14%,rgba(255,255,255,.38) 30%,rgba(255,255,255,.04) 45%,transparent 60%);
+  background-size: 260% 260%; background-position: 8% 0%;
+  transition: background-position .6s var(--ease),opacity var(--fast);
+}
+.button:hover::after,.btn:hover::after,.icon-button:hover::after,.cat-icon:hover::after,
+.cat-switch > summary:hover::after,.tab-list button:hover::after,.active-filters button:hover::after { background-position: 92% 100%; }
+.button:hover,.btn:hover,.cat-icon:hover,.cat-switch > summary:hover,.tab-list button:hover,.active-filters button:hover {
+  --glass-blur: 22px; --glass-gloss: 1;
+}
+/* Press = the lens compresses and the light pools. */
+.button:active,.btn:active,.icon-button:active,.cat-icon:active,.cat-switch > summary:active,
+.tab-list button:active,.active-filters button:active { transform: translateY(0) scale(.96); --glass-gloss: .45; }
+.button:hover:active,.icon-button:hover:active { transform: translateY(-1px) scale(.96); }
+
+/* -- per-component tints: same colours as before, now translucent ----------
+   Base classes first: .btn and .button--* share specificity (0,1,0), so a base
+   tint declared after a modifier silently wins and paints the modifier over. */
+.btn { --glass-tint: rgba(255,255,255,.46); border-color: color-mix(in srgb,var(--line) 45%,transparent); }
+.button--primary,.btn--primary {
+  /* 90%, not 60%: white-on-orange is already the tightest contrast pair in the
+     palette. The glass has to come from the rim, not from thinning the paint. */
+  --glass-tint: color-mix(in srgb,var(--orange) 90%,transparent);
+  --glass-hair: rgba(255,255,255,.4); --glass-gloss: .32; --glass-refract: rgba(0,0,0,.4);
+  --glass-drop: 0 1px 2px rgba(0,0,0,.16), 0 10px 22px -8px color-mix(in srgb,var(--orange) 62%,transparent), 0 22px 44px -20px rgba(0,0,0,.4);
+  border-color: transparent; color: var(--white);
+}
+.button--primary:hover,.btn--primary:hover {
+  --glass-tint: color-mix(in srgb,#e84b13 92%,transparent);
+  --glass-drop: 0 1px 2px rgba(0,0,0,.16), 0 16px 32px -10px color-mix(in srgb,var(--orange) 75%,transparent), 0 26px 52px -22px rgba(0,0,0,.45);
+}
+.button--secondary,.btn--ghost { --glass-tint: rgba(255,255,255,.24); border-color: color-mix(in srgb,var(--line) 45%,transparent); }
+.button--light { --glass-tint: rgba(255,255,255,.72); --glass-gloss: .4; color: var(--ink); }  /* sits on the dark footer — keep it readable */
+.icon-button {
+  /* Dark glass on the dark header: a bright dome here reads as brushed metal,
+     so gloss stays low and the rim does the work. */
+  --glass-tint: rgba(255,255,255,.1); --glass-hair: rgba(255,255,255,.3);
+  --glass-rim: rgba(255,255,255,.7); --glass-rim-soft: rgba(255,255,255,.25);
+  --glass-gloss: .3; --glass-refract: rgba(0,0,0,.5);
+  --glass-drop: 0 2px 6px rgba(0,0,0,.4), 0 10px 24px -12px rgba(0,0,0,.7);
+  border-color: transparent;
+}
+.icon-button:hover { --glass-tint: rgba(255,255,255,.22); --glass-blur: 22px; transform: translateY(-2px); }
+.drawer__header .icon-button { --glass-tint: rgba(255,255,255,.4); --glass-hair: rgba(17,17,17,.12); }
+.cat-icon { --glass-tint: rgba(255,255,255,.44); border-color: color-mix(in srgb,var(--line) 40%,transparent); }
+.cat-icon[aria-pressed="true"] {
+  --glass-tint: color-mix(in srgb,var(--c) 88%,transparent);
+  --glass-hair: rgba(255,255,255,.42); --glass-gloss: .3; --glass-refract: rgba(0,0,0,.4);
+  --glass-drop: 0 1px 2px rgba(0,0,0,.14), 0 10px 22px -10px color-mix(in srgb,var(--c) 70%,transparent);
+  border-color: transparent; color: #fff;
+}
+.tab-list button { --glass-tint: rgba(255,255,255,.3); }
+.tab-list button[aria-selected="true"] { --glass-tint: color-mix(in srgb,var(--ink) 86%,transparent); --glass-hair: rgba(255,255,255,.34); --glass-gloss: .34; border-color: transparent; color: var(--white); }
+.active-filters button {
+  --glass-tint: color-mix(in srgb,var(--ink) 84%,transparent); --glass-hair: rgba(255,255,255,.32); --glass-gloss: .34;
+  --glass-drop: 0 1px 2px rgba(0,0,0,.2), 0 8px 18px -10px rgba(0,0,0,.6);
+  color: var(--white);
+}
+.select,.input,.qty {
+  --glass-tint: rgba(255,255,255,.44); --glass-rim: rgba(255,255,255,.9);
+  --glass-drop: 0 1px 2px rgba(0,0,0,.1), 0 6px 14px -10px rgba(0,0,0,.4);
+  border-color: color-mix(in srgb,var(--line) 45%,transparent);
+}
+.select:focus,.input:focus,.qty:focus { --glass-tint: rgba(255,255,255,.66); --glass-blur: 22px; }
+
+/* -- dropdowns ------------------------------------------------------------- */
+.cat-switch > summary { --glass-tint: rgba(255,255,255,.44); border-color: color-mix(in srgb,var(--line) 45%,transparent); }
+.cat-switch[open] > summary { --glass-tint: rgba(255,255,255,.66); --glass-gloss: 1; }
+.cat-switch__menu {
+  --glass-tint: rgba(255,255,255,.62); --glass-blur: 28px; --glass-gloss: .42;
+  --glass-drop: 0 4px 10px rgba(0,0,0,.1), 0 28px 70px -20px rgba(0,0,0,.45);
+  border-color: color-mix(in srgb,var(--line) 40%,transparent);
+}
+.cat-switch__menu button:hover { background: rgba(255,255,255,.55); }
+.cat-switch__menu button[aria-pressed="true"] { background: color-mix(in srgb,var(--ink) 82%,transparent); }
+/* Native <select> popups are drawn by the OS and cannot be glassed — only the
+   closed control above is ours. ponytail: a JS listbox would fix that; not
+   worth rebuilding five selects for. */
+
+/* Real refraction: the backdrop is displaced by a noise field before it is
+   blurred, so edges bend like a lens instead of just frosting. Chromium only —
+   Safari/Firefox drop the whole declaration and keep the blur above. */
+@supports (backdrop-filter: url(#fo-refract)) or (-webkit-backdrop-filter: url(#fo-refract)) {
+  .button,.btn,.icon-button,.cat-icon,.cat-switch > summary,.cat-switch__menu,
+  .tab-list button,.active-filters button {
+    -webkit-backdrop-filter: url(#fo-refract) blur(var(--glass-blur)) saturate(1.8) brightness(1.06);
+    backdrop-filter: url(#fo-refract) blur(var(--glass-blur)) saturate(1.8) brightness(1.06);
+  }
+}
+
+/* Blur unsupported (older Firefox/Safari): go near-opaque so nothing turns
+   into unreadable milk. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .button--secondary,.btn--ghost,.btn,.cat-icon,.cat-switch > summary,.select,.input,.qty,.tab-list button { --glass-tint: rgba(255,255,255,.92); }
+  .cat-switch__menu { --glass-tint: rgba(255,255,255,.97); }
+  .button--light { --glass-tint: rgba(255,255,255,.96); }
+  .button--primary,.btn--primary { --glass-tint: var(--orange); }
+  .active-filters button { --glass-tint: var(--ink); }
+  .icon-button { --glass-tint: rgba(255,255,255,.16); }
+}

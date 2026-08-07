@@ -1,0 +1,130 @@
+# Page vs notify vs digest, decided up front.
+#
+# Nothing pages on a business metric that is not actionable at 3am -- that is
+# how alerting dies. Low stock is a digest; a ledger that disagrees with itself
+# is a page, because every stock number in the admin panel is wrong until it is
+# resolved.
+
+groups:
+  - name: page
+    rules:
+      - alert: StorefrontErrorRate
+        expr: |
+          sum(rate(flask_http_request_total{job="web",status=~"5.."}[5m]))
+          / sum(rate(flask_http_request_total{job="web"}[5m])) > 0.02
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "Storefront is serving over 2% 5xx"
+          runbook: "Check Sentry for the top exception, then web logs in Loki by request_id."
+
+      - alert: CheckoutDown
+        expr: probe_success{instance=~".*web.*readyz"} == 0
+        for: 2m
+        labels: {severity: page}
+        annotations:
+          summary: "Storefront readiness probe failing -- checkout may be down"
+
+      - alert: PostgresUnreachable
+        expr: pg_up == 0
+        for: 2m
+        labels: {severity: page}
+        annotations:
+          summary: "Postgres is unreachable"
+
+      - alert: DiskAlmostFull
+        expr: |
+          (1 - node_filesystem_avail_bytes{mountpoint="/"}
+             / node_filesystem_size_bytes{mountpoint="/"}) > 0.85
+        for: 10m
+        labels: {severity: page}
+        annotations:
+          summary: "Disk over 85% full -- event partitions grow silently"
+
+      - alert: LedgerDrift
+        expr: fo_ledger_drift_units > 0
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "Inventory ledger disagrees with the cached balance"
+          runbook: "select * from ops.ledger_drift(); do not trust stock until this is zero."
+
+      - alert: StripeWebhookFailures
+        expr: increase(flask_http_request_total{job="web",path="/webhooks/stripe",status=~"[45].."}[15m]) > 3
+        labels: {severity: page}
+        annotations:
+          summary: "Stripe webhooks are failing -- orders may be paid but not recorded"
+
+  - name: notify
+    rules:
+      - alert: StorefrontLatency
+        expr: histogram_quantile(0.95, sum(rate(flask_http_request_duration_seconds_bucket{job="web"}[10m])) by (le)) > 1
+        for: 10m
+        labels: {severity: notify}
+        annotations:
+          summary: "Storefront p95 over 1s for ten minutes"
+
+      - alert: EventStreamLag
+        expr: fo_event_stream_lag > 10000
+        for: 10m
+        labels: {severity: notify}
+        annotations:
+          summary: "Over 10k events pending -- the loader is behind or stopped"
+
+      - alert: EventLoaderStalled
+        expr: rate(fo_events_loaded_total[15m]) == 0 and fo_event_stream_lag > 100
+        for: 15m
+        labels: {severity: notify}
+        annotations:
+          summary: "Events are queueing but nothing is being loaded"
+
+      - alert: MartFreshness
+        expr: time() - fo_mart_last_build_timestamp > 1800
+        for: 5m
+        labels: {severity: notify}
+        annotations:
+          summary: "Marts have not rebuilt in 30 minutes -- the SLO is 15"
+
+      - alert: ReplicaLag
+        expr: pg_replication_lag > 60
+        for: 5m
+        labels: {severity: notify}
+        annotations:
+          summary: "Read replica is over 60s behind"
+
+  - name: digest
+    rules:
+      - alert: LowStock
+        expr: fo_components_below_threshold > 0
+        for: 6h
+        labels: {severity: digest}
+        annotations:
+          summary: "{{ $value }} components at or below their reorder threshold"
+
+      - alert: OrdersStuck
+        expr: fo_orders_stuck_hours > 0
+        for: 2h
+        labels: {severity: digest}
+        annotations:
+          summary: "{{ $value }} paid orders unshipped for over 24 hours"
+
+      - alert: OrdersBlocked
+        expr: fo_orders_blocked > 0
+        for: 4h
+        labels: {severity: digest}
+        annotations:
+          summary: "{{ $value }} line items blocked on the production board"
+
+      - alert: AbandonedCartValue
+        expr: fo_abandoned_cart_cents_24h > 50000
+        for: 1h
+        labels: {severity: digest}
+        annotations:
+          summary: "Over $500 of carts abandoned in the last 24 hours"
+
+      - alert: PaymentFailures
+        expr: fo_payment_failures_1h > 3
+        for: 15m
+        labels: {severity: digest}
+        annotations:
+          summary: "{{ $value }} payment failures in the last hour"

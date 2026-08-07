@@ -1,0 +1,154 @@
+{% extends "_insights_base.html" %}
+{% from "_charts.html" import ranked, dur %}
+{% block analytics %}
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Best sellers</h2>
+      <span class="spacer"></span><span class="chip chip--ok">top fifth by units</span></div>
+    <div class="panel__body panel__body--flush">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>#</th><th>Product</th><th class="right">Units</th><th class="right">Revenue</th><th class="right">Margin/unit</th></tr></thead>
+          <tbody>
+            {% for p in best %}
+            <tr>
+              <td data-label="#" class="num">{{ p.rank_by_units }}</td>
+              <td data-label="Product">{{ p.product_name }}<br><small class="mono" style="color:var(--text-faint)">{{ p.slug }}</small></td>
+              <td data-label="Units" class="right num">{{ p.units_sold }}</td>
+              <td data-label="Revenue" class="right money">{{ p.revenue_cents|money }}</td>
+              <td data-label="Margin/unit" class="right money">{{ p.margin_per_unit_cents|money }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="empty">No sales yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head"><h2 class="panel__title">Worst sellers</h2>
+      <span class="spacer"></span><span class="chip chip--danger">bottom fifth, and never-sold</span></div>
+    <div class="panel__body panel__body--flush">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Product</th><th class="right">Views</th><th class="right">Carted</th><th class="right">Units</th><th>Verdict</th></tr></thead>
+          <tbody>
+            {% for p in worst %}
+            <tr>
+              <td data-label="Product">{{ p.product_name }}<br><small class="mono" style="color:var(--text-faint)">{{ p.slug }}</small></td>
+              <td data-label="Views" class="right num">{{ p.views }}</td>
+              <td data-label="Carted" class="right num">{{ p.cart_adds }}</td>
+              <td data-label="Units" class="right num">{{ p.units_sold }}</td>
+              <td data-label="Verdict"><span class="chip chip--warn">{{ p.verdict|replace('_', ' ') }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="empty">Not enough sales history to rank.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Looked at, never bought</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">the most actionable list here</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Product</th><th class="right">Views</th><th class="right">Visitors</th>
+                   <th class="right">Carted</th><th class="right">Saved</th>
+                   <th class="right">Time on page</th><th class="right">Scroll</th></tr></thead>
+        <tbody>
+          {% for p in never_bought %}
+          <tr>
+            <td data-label="Product">{{ p.product_name }}<br><small class="mono" style="color:var(--text-faint)">{{ p.slug }}</small></td>
+            <td data-label="Views" class="right num">{{ p.views }}</td>
+            <td data-label="Visitors" class="right num">{{ p.viewing_sessions }}</td>
+            <td data-label="Carted" class="right num">{{ p.cart_adds }}</td>
+            <td data-label="Saved" class="right num">{{ p.wishlist_adds }}</td>
+            <td data-label="Time on page" class="right num">{{ dur(p.avg_seconds_on_page or 0) }}</td>
+            <td data-label="Scroll" class="right num">{{ p.avg_scroll_pct or 0 }}%</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty">Every viewed product has sold at least once.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel__body">
+      <p class="insight">
+        Long time on page with no purchase is a <strong>price or configurator</strong> problem.
+        Short time with a high view count is an <strong>image or title</strong> problem —
+        the card promised something the page did not deliver.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Full product journey</h2>
+    <span class="spacer"></span>
+    <nav class="tabs" aria-label="Sort products">
+      {% for key, label in [('views','Views'),('cart_adds','Cart adds'),('orders','Orders'),
+                            ('revenue','Revenue'),('margin','Margin'),('conversion','Conversion'),('dwell','Dwell')] %}
+        <a href="{{ url_for('insights.products_analytics', sort=key, days=days) }}"
+           {% if sort == key %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Product</th><th class="right">Card clicks</th><th class="right">Views</th>
+              <th class="right">Configured</th><th class="right">Saved</th><th class="right">Carted</th>
+              <th class="right">Orders</th><th class="right">View→cart</th><th class="right">Cart→order</th>
+              <th class="right">Revenue</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          {% for p in journey %}
+          <tr>
+            <td data-label="Product">{{ p.product_name }}</td>
+            <td data-label="Card clicks" class="right num">{{ p.card_clicks }}</td>
+            <td data-label="Views" class="right num">{{ p.views }}</td>
+            <td data-label="Configured" class="right num">{{ p.config_changes }}</td>
+            <td data-label="Saved" class="right num">{{ p.wishlist_adds }}</td>
+            <td data-label="Carted" class="right num">{{ p.cart_adds }}</td>
+            <td data-label="Orders" class="right num">{{ p.orders }}</td>
+            <td data-label="View&rarr;cart" class="right num">{{ p.view_to_cart_pct if p.view_to_cart_pct is not none else '—' }}%</td>
+            <td data-label="Cart&rarr;order" class="right num">{{ p.cart_to_order_pct if p.cart_to_order_pct is not none else '—' }}%</td>
+            <td data-label="Revenue" class="right money">{{ p.revenue_cents|money }}</td>
+            <td data-label="Verdict">
+              <span class="chip {{ 'chip--ok' if p.verdict == 'converting' else ('chip--danger' if p.verdict in ('looked_never_bought','carted_never_bought') else '') }}">
+                {{ p.verdict|replace('_', ' ') }}
+              </span>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="11" class="empty">
+            <p class="empty__title">No product activity yet</p>
+            <p>Browse the storefront with the collector running, then rebuild the marts.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__body">
+    {{ ranked(journey, 'product_name', 'views', 'Most viewed products', slot=1,
+              secondary_key='orders', secondary_label='orders', limit=12) }}
+  </div>
+</div>
+{% endblock %}

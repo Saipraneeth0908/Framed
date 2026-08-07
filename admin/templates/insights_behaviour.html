@@ -1,0 +1,81 @@
+{% extends "_insights_base.html" %}
+{% from "_charts.html" import ranked, heatmap, dur %}
+{% block analytics %}
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(pages, 'path', 'views', 'Most visited pages', slot=1,
+                secondary_key='avg_seconds', secondary_label='avg seconds', limit=10) }}
+      <p class="insight">Bar length is visits; the right-hand figure is average <em>visible</em> seconds on the page.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(pages | sort(attribute='avg_seconds', reverse=true) | list,
+                'path', 'avg_seconds', 'Pages that hold attention longest', unit='s', slot=3,
+                secondary_key='avg_scroll_pct', secondary_label='avg scroll %', limit=10) }}
+      <p class="insight">Right-hand figure is how far down the page people scrolled, on average.</p>
+    </div>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Page-by-page engagement</h2>
+    <span class="spacer"></span>
+    <span class="metric__foot">exit rate = share of visits to this page that ended the session</span>
+  </div>
+  <div class="panel__body panel__body--flush">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Page</th><th class="right">Views</th><th class="right">Visitors</th>
+              <th class="right">Median</th><th class="right">p90</th><th class="right">Scroll</th>
+              <th class="right">Clicks</th><th class="right">Exit</th></tr>
+        </thead>
+        <tbody>
+          {% for p in pages %}
+          <tr>
+            <td data-label="Page"><span class="mono">{{ p.path }}</span></td>
+            <td data-label="Views" class="right num">{{ p.views }}</td>
+            <td data-label="Visitors" class="right num">{{ p.visitors }}</td>
+            <td data-label="Median" class="right num">{{ dur(p.median_seconds or 0) }}</td>
+            <td data-label="p90" class="right num">{{ dur(p.p90_seconds or 0) }}</td>
+            <td data-label="Scroll" class="right num">{{ p.avg_scroll_pct or 0 }}%</td>
+            <td data-label="Clicks" class="right num">{{ p.clicks }}</td>
+            <td data-label="Exit" class="right num">
+              <span class="chip {{ 'chip--warn' if (p.exit_pct or 0) > 60 else '' }}">{{ p.exit_pct or 0 }}%</span>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="empty">
+            <p class="empty__title">No page views recorded</p>
+            <p>Browse the storefront with the collector running and they will appear here.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<section class="grid grid--2">
+  <div class="panel">
+    <div class="panel__body">
+      {{ ranked(clicks, 'target', 'clicks', 'Most clicked controls', slot=2,
+                secondary_key='sessions', secondary_label='sessions', limit=12) }}
+      <p class="insight">
+        Recorded by control, not by pixel. A coordinate heatmap is a screenshot — it stops
+        meaning anything the moment the layout changes, and you cannot act on it.
+      </p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__body">
+      {{ heatmap(heat, 'When people visit (day by hour, UTC)') }}
+      <p class="insight">Hover a cell for sessions and purchases. Use it to time a drop or a restock.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

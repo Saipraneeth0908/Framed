@@ -26,6 +26,7 @@
       <div class="product-price"><strong>${{ product.base_price }}</strong><span class="muted small">Framed &amp; ready to hang · free hanging kit</span></div>
 
       <form method="POST" action="{{ url_for('cart_add') }}" id="addForm" class="product-cta">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}"/>
         <input type="hidden" name="slug" value="{{ product.slug }}">
         <input type="hidden" name="qty" value="1">
         <button class="button button--primary" id="addToCartBtn" type="submit">Add to cart</button>

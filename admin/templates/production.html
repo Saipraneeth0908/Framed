@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% macro job_card(job, allow_advance) %}
+  <article class="job">
+    <div class="job__top">
+      <a class="job__order" href="{{ url_for('orders.order_detail', order_id=job.order_id) }}">{{ job.order_no }}</a>
+      <span class="job__qty num">×{{ job.qty }}</span>
+    </div>
+    <p class="job__name">{{ job.name_snapshot }}</p>
+    <p class="job__attrs">{{ job.attrs_snapshot.frame }} · {{ job.attrs_snapshot.size }} · {{ job.sku_snapshot }}</p>
+    {% if job.blocked_reason %}
+      <p class="job__attrs" style="color:var(--danger)">{{ icon('alert', 13) }} {{ job.blocked_reason }}</p>
+    {% endif %}
+    <p class="job__attrs">{{ icon('clock', 13) }} ordered {{ job.placed_at|ago }}</p>
+
+    {% if allow_advance %}
+    <div class="job__actions">
+      {% set nxt = next_station.get(job.status) or ('printing' if job.status in ('blocked', 'reprint') else none) %}
+      {% if nxt %}
+      <form method="post" action="{{ url_for('production.advance', item_id=job.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="to" value="{{ nxt }}">
+        <button class="btn btn--primary btn--touch btn--block" type="submit">
+          {{ icon('arrow', 16) }} {{ nxt|capitalize }}
+        </button>
+      </form>
+      {% endif %}
+      {% if job.status != 'blocked' %}
+      <form method="post" action="{{ url_for('production.advance', item_id=job.id) }}" style="flex:0 0 auto">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="to" value="blocked">
+        <input type="hidden" name="reason" value="flagged at {{ job.status }}">
+        <button class="btn btn--danger btn--touch" type="submit" aria-label="Block this job">{{ icon('alert', 16) }}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </article>
+{% endmacro %}
+
+{% block content %}
+<p class="metric__foot" style="margin:0">
+  One card per line item, not per order: a two-poster order can have one framed and one still printing.
+  Advancing into <strong>printing</strong> consumes the reserved components.
+</p>
+
+{% if board.blocked %}
+<div class="panel station--blocked">
+  <div class="panel__head">
+    {{ icon('alert', 16) }}
+    <h2 class="panel__title">Blocked</h2>
+    <span class="badge station__count">{{ board.blocked|length }}</span>
+  </div>
+  <div class="station__body">
+    {% for job in board.blocked %}{{ job_card(job, can(Perm.PRODUCTION_EDIT)) }}{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="board">
+  {% for station in stations %}
+    {% if station != 'packed' %}
+    <section class="station" aria-labelledby="station-{{ station }}">
+      <header class="station__head">
+        <h2 class="panel__title" id="station-{{ station }}">{{ station }}</h2>
+        <span class="badge badge--quiet station__count">{{ board[station]|length }}</span>
+      </header>
+      <div class="station__body">
+        {% if board[station] %}
+          {% for job in board[station] %}{{ job_card(job, can(Perm.PRODUCTION_EDIT)) }}{% endfor %}
+        {% else %}
+          <p class="metric__foot" style="text-align:center;padding:var(--s4) 0">Nothing here</p>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+  {% endfor %}
+
+  {% if board.reprint %}
+  <section class="station station--blocked" aria-labelledby="station-reprint">
+    <header class="station__head">
+      <h2 class="panel__title" id="station-reprint">Reprint</h2>
+      <span class="badge station__count">{{ board.reprint|length }}</span>
+    </header>
+    <div class="station__body">
+      {% for job in board.reprint %}{{ job_card(job, can(Perm.PRODUCTION_EDIT)) }}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
